@@ -2276,7 +2276,7 @@
 <!-- Firebase v11 Module (Strict Paths & Auth Required) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signInAnonymously, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     let firebaseConfig = {
@@ -2304,6 +2304,59 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const sessionToLogin = urlParams.get('session');
+
+    // --- 處理 Redirect 登入結果 (解決手機瀏覽器彈窗攔截問題) ---
+    getRedirectResult(auth).then(async (result) => {
+        if (result && result.user) {
+            const email = result.user.email;
+            const isFjm = email.endsWith('@fjm.kh.edu.tw');
+            const username = email.split('@')[0];
+            const isStudent = /^\d+$/.test(username);
+
+            if (sessionToLogin) {
+                // --- 模式：手機掃碼授權模式 ---
+                if (isFjm && !isStudent) {
+                    const sessionRef = doc(db, 'artifacts', appId, 'public', 'data', 'login_sessions', sessionToLogin);
+                    await setDoc(sessionRef, { email: email, success: true, timestamp: Date.now() });
+                    document.getElementById('phoneLoginMsg').innerText = "✅ 授權成功！您現在可以關閉此畫面，大螢幕將自動進入系統。";
+                    document.getElementById('phoneLoginMsg').style.color = "var(--success)";
+                    document.getElementById('phoneLoginCard').style.display = 'block';
+                } else {
+                    document.getElementById('phoneLoginMsg').innerText = isStudent ? "❌ 授權失敗：學生帳號禁止登入！" : "❌ 授權失敗：必須使用學校網域帳號！";
+                    document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
+                    await auth.signOut();
+                }
+            } else {
+                // --- 模式：直接在手機/電腦上點擊 Google 登入 ---
+                if (isFjm) {
+                    appData.userEmail = email;
+                    const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
+                    appData.isAdmin = adminEmails.includes(email.toLowerCase());
+
+                    saveLocalSession(appData.userEmail, appData.isAdmin);
+
+                    document.getElementById('userEmailDisplay').innerText = "✅ 登入成功：" + email;
+                    document.getElementById('mainLoginCard').style.display = 'none';
+                    document.getElementById('classSelectSection').style.display = 'block';
+                    
+                    if(appData.isAdmin) {
+                        document.getElementById('btn-tab-advanced').style.display = 'inline-block';
+                        document.getElementById('advUserEmail').innerText = email + " (管理員)";
+                    }
+                } else {
+                    showMessageModal("⚠️ 您的帳號非學校網域 (@fjm.kh.edu.tw)。", true);
+                    await auth.signOut();
+                }
+            }
+        }
+    }).catch(e => {
+        console.error("Redirect Error:", e);
+        const msgTarget = sessionToLogin ? document.getElementById('phoneLoginMsg') : null;
+        if (msgTarget) {
+            msgTarget.innerText = "❌ 登入發生錯誤：" + e.message;
+            msgTarget.style.color = "var(--danger)";
+        }
+    });
 
     // --- 本地記憶 8 小時免登入機制 ---
     function checkLocalSession() {
@@ -2482,30 +2535,11 @@
                     hd: 'fjm.kh.edu.tw' 
                 });
                 
-                const result = await signInWithPopup(auth, provider);
-                const email = result.user.email;
-                
-                const isFjm = email.endsWith('@fjm.kh.edu.tw');
-                const username = email.split('@')[0];
-                const isStudent = /^\d+$/.test(username); // 判斷帳號開頭是否全為數字
-
-                if (isFjm && !isStudent) {
-                    const sessionRef = doc(db, 'artifacts', appId, 'public', 'data', 'login_sessions', sessionToLogin);
-                    await setDoc(sessionRef, { email: email, success: true, timestamp: Date.now() });
-                    document.getElementById('phoneLoginMsg').innerText = "✅ 授權成功！您現在可以關閉此畫面，大螢幕將自動進入系統。";
-                    document.getElementById('phoneLoginMsg').style.color = "var(--success)";
-                } else if (isFjm && isStudent) {
-                    document.getElementById('phoneLoginMsg').innerText = "❌ 授權失敗：學生帳號禁止登入！";
-                    document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
-                    await auth.signOut();
-                } else {
-                    document.getElementById('phoneLoginMsg').innerText = "❌ 授權失敗：必須使用 @fjm.kh.edu.tw 網域帳號！";
-                    document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
-                    await auth.signOut();
-                }
+                // 改用 Redirect 以提高手機瀏覽器相容性 (如 LINE)
+                await signInWithRedirect(auth, provider);
             } catch(e) {
                 console.error(e);
-                document.getElementById('phoneLoginMsg').innerText = "❌ 登入發生錯誤。";
+                document.getElementById('phoneLoginMsg').innerText = "❌ 登入發生錯誤：" + e.message;
                 document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
             }
         };
@@ -2602,32 +2636,36 @@
                 hd: 'fjm.kh.edu.tw' 
             });
             
-            const result = await signInWithPopup(auth, provider);
-            const email = result.user.email;
+            // 手機版使用 Redirect 以避免彈窗被攔截；電腦版維持 Popup 體驗較佳
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             
-            if(email.endsWith('@fjm.kh.edu.tw')) {
-                appData.userEmail = email;
-                
-                // 從 GAS API 取得白名單檢查是否為管理員
-                const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
-                if(adminEmails.includes(email.toLowerCase())) {
-                    appData.isAdmin = true;
-                    document.getElementById('btn-tab-advanced').style.display = 'inline-block';
-                    document.getElementById('advUserEmail').innerText = email + " (管理員)";
-                } else {
-                    appData.isAdmin = false;
-                    document.getElementById('btn-tab-advanced').style.display = 'none';
-                    document.getElementById('advUserEmail').innerText = email;
-                }
-
-                saveLocalSession(appData.userEmail, appData.isAdmin);
-
-                document.getElementById('userEmailDisplay').innerText = "✅ 授權成功：" + email;
-                document.getElementById('mainLoginCard').style.display = 'none';
-                document.getElementById('classSelectSection').style.display = 'block';
+            if (isMobile) {
+                await signInWithRedirect(auth, provider);
             } else {
-                showMessageModal("⚠️ 您的帳號非學校網域 (@fjm.kh.edu.tw)。", true);
-                auth.signOut();
+                const result = await signInWithPopup(auth, provider);
+                const email = result.user.email;
+                
+                if(email.endsWith('@fjm.kh.edu.tw')) {
+                    appData.userEmail = email;
+                    
+                    // 從 GAS API 取得白名單檢查是否為管理員
+                    const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
+                    appData.isAdmin = adminEmails.includes(email.toLowerCase());
+
+                    saveLocalSession(appData.userEmail, appData.isAdmin);
+
+                    document.getElementById('userEmailDisplay').innerText = "✅ 授權成功：" + email;
+                    document.getElementById('mainLoginCard').style.display = 'none';
+                    document.getElementById('classSelectSection').style.display = 'block';
+                    
+                    if(appData.isAdmin) {
+                        document.getElementById('btn-tab-advanced').style.display = 'inline-block';
+                        document.getElementById('advUserEmail').innerText = email + " (管理員)";
+                    }
+                } else {
+                    showMessageModal("⚠️ 您的帳號非學校網域 (@fjm.kh.edu.tw)。", true);
+                    auth.signOut();
+                }
             }
         } catch (error) {
             console.error("登入失敗", error);
