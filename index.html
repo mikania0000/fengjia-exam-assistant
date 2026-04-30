@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- 
   =============================================================================
-  本程式由鳳甲國中 曾國洋 老師創作。(雲端升級版 - 含錯題廣播與全校設定同步系統)
+  本程式由鳳甲國中 曾國洋 老師創作。(雲端升級版 - GAS安全後端整合)
   本程式採用「創用 CC 姓名標示-非商業性 4.0 國際 授權條款」(CC BY-NC 4.0) 授權。
   =============================================================================
 -->
@@ -343,6 +343,29 @@
         #box-pullout .student-chip { background: var(--warning-light); border-color: var(--warning); color: #c4861f; }
         [data-theme="dark"] #box-pullout .student-chip { background: #5e3f2b; border-color: #eab459; color: #eab459; }
 
+        /* Excel 相關自訂樣式 */
+        .excel-btn-export { background: #eaf3ec; color: #529665; border: 1px solid #a5d6b4; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: background 0.2s;}
+        .excel-btn-export:hover { background: #d0ebd8; }
+        [data-theme="dark"] .excel-btn-export { background: #24362a; color: #75b386; border-color: #436e52; }
+        [data-theme="dark"] .excel-btn-export:hover { background: #324a3a; }
+
+        .excel-btn-import { background: #fdeaea; color: #e25858; border: 1px solid #f5b0b0; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: background 0.2s;}
+        .excel-btn-import:hover { background: #fad1d1; }
+        [data-theme="dark"] .excel-btn-import { background: #3b2424; color: #eb7a7a; border-color: #8c4242; }
+        [data-theme="dark"] .excel-btn-import:hover { background: #523131; }
+
+        .excel-btn-paste { background: #eef2f9; color: #4a72a8; border: 1px solid #b6cdec; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: background 0.2s;}
+        .excel-btn-paste:hover { background: #dce5f4; }
+        [data-theme="dark"] .excel-btn-paste { background: #233142; color: #7a9ccb; border-color: #3b5374; }
+        [data-theme="dark"] .excel-btn-paste:hover { background: #2d3f56; }
+        [data-theme="dark"] #pasteInputArea, [data-theme="dark"] #schedulePasteInputArea { background: var(--bg-color) !important; border-color: var(--border-color) !important; color: var(--text-main) !important; }
+
+        /* 貼上範例表格樣式 */
+        .example-table { width: 100%; border-collapse: collapse; margin-top: 8px; margin-bottom: 12px; font-size: 0.95rem; color: var(--text-main); background: var(--card-bg); }
+        .example-table th, .example-table td { border: 1px solid var(--border-color); padding: 6px; text-align: center; }
+        .example-table th { background-color: var(--primary-light); color: var(--primary); font-weight: bold; }
+        [data-theme="dark"] .example-table th { background-color: #3a2a26; color: #e68d7a; }
+
         /* Cloud Sync & Broadcast UI */
         .cloud-sync-card { border: 2px dashed var(--border-color); padding: 15px; border-radius: 12px; background: var(--primary-light); margin-bottom: 15px; transition: all 0.3s;}
         [data-theme="dark"] .cloud-sync-card { background: #3a2a26; border-color: #57534e; }
@@ -378,8 +401,7 @@
                 <img id="qrImage" src="" alt="QR Code" style="display:none; width: 200px; height: 200px;">
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
-            <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">限 @fjm.kh.edu.tw 教職員帳號登入</p>
-            <button onclick="window.dbActions.loginWithGoogle()" style="background: transparent; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; margin: 15px auto 0 auto; font-size: 0.85rem; box-shadow: none;">或在此設備直接登入 (行政/最高權限專用)</button>
+            <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -558,7 +580,10 @@
                         <button class="tab-btn" onclick="switchTab('tab-advanced')" id="btn-tab-advanced" style="display:none;">🔧 進階</button>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+                    <button type="button" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 50px; padding: 6px 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: background 0.2s;" onclick="openInstructionModal()" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.3)'" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.2)'">ℹ️ 功能說明</button>
+                    <button type="button" style="background: #3b82f6; color: white; border: 1px solid #2563eb; border-radius: 50px; padding: 6px 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: background 0.2s;" onclick="setCustomDefault()" onmouseover="this.style.backgroundColor='#2563eb'" onmouseout="this.style.backgroundColor='#3b82f6'">💾 設為預設值</button>
+                    <button type="button" style="background: #e25858; color: white; border: 1px solid #c44545; border-radius: 50px; padding: 6px 12px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: background 0.2s;" onclick="requestFactoryReset()" onmouseover="this.style.backgroundColor='#d34b4b'" onmouseout="this.style.backgroundColor='#e25858'">⚠️ 回復原始值</button>
                     <button style="background: transparent; color: white; border: 1px solid rgba(255,255,255,0.6); padding: 6px 12px; font-size: 0.95rem; border-radius: 50px; cursor:pointer; font-weight: bold;" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='transparent'" onclick="window.dbActions.logoutSystem()">登出</button>
                     <button class="btn-close" onclick="requestCloseSettings()">關閉</button>
                 </div>
@@ -575,7 +600,7 @@
                                     <input type="text" id="setSchoolName" placeholder="學校名稱" style="flex: 1;">
                                 </div>
                                 <div style="display: flex;" class="flex-gap-8">
-                                    <select id="setAcademicYear" style="flex: 1;"><option value="114學年度">114學年度</option><option value="115學年度">115學年度</option></select>
+                                    <select id="setAcademicYear" style="flex: 1;"><option value="113學年度">113學年度</option><option value="114學年度">114學年度</option><option value="115學年度">115學年度</option></select>
                                     <select id="setSemester" style="flex: 1;"><option value="第1學期">第1學期</option><option value="第2學期">第2學期</option></select>
                                     <select id="setExam" style="flex: 1.5;" onchange="toggleCustomExam()">
                                         <option value="第1次定期評量">第1次定期評量</option><option value="第2次定期評量">第2次定期評量</option>
@@ -616,7 +641,14 @@
 
                     <div class="drag-layout">
                         <div class="drag-box" id="box-present" style="flex: 2;" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
-                            <div class="drag-box-title"><span>✅ 在場學生</span></div>
+                            <div class="drag-box-title">
+                                <span>✅ 在場學生 (點擊切換為未到)</span>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-main);">產生座號(最大):</span>
+                                    <input type="number" id="quickSeatCount" min="1" max="60" value="30" style="width: 50px; padding: 2px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; text-align: center;">
+                                    <button type="button" style="background: var(--warning); color: white; border: none; border-radius: 4px; padding: 2px 8px; font-size: 0.85rem; cursor: pointer; box-shadow: none;" onclick="requestGenerateSeats()">產生</button>
+                                </div>
+                            </div>
                         </div>
                         <div style="flex: 1; display: flex; flex-direction: column;" class="flex-col-gap-15">
                             <div class="drag-box" id="box-absent" style="flex: 1;" ondrop="drop(event)" ondragover="allowDrop(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)">
@@ -631,8 +663,22 @@
 
                 <!-- 分頁 2：學生名單設定 -->
                 <div id="tab-students" class="tab-pane">
+                    
+                    <div style="background: #fdf5f0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed var(--primary); transition: background 0.3s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <h3 style="margin:0; font-size: 1.1rem; color: var(--primary);">✨ 本地名單匯出與匯入</h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                                <button type="button" class="excel-btn-export" onclick="exportExcel()">匯出名單(缺考)</button>
+                                <label class="excel-btn-import">
+                                    匯入 Excel <input type="file" id="importExcel" accept=".xlsx, .xls" style="display:none;" onchange="handleImportChange(event)">
+                                </label>
+                                <button type="button" class="excel-btn-paste" onclick="openPasteModal()">📋 從 EXCEL 貼上</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; margin-bottom: 10px;">
-                        <h3 style="color: var(--primary); margin: 0; font-size: 1.2rem;">🧑‍🎓 學生名單 (已自雲端自動匯入)</h3>
+                        <h3 style="color: var(--primary); margin: 0; font-size: 1.2rem;">🧑‍🎓 學生名單編輯</h3>
                         <div style="display: flex; gap: 10px;">
                             <button type="button" class="btn-save" style="background: var(--success); padding: 6px 12px; font-size: 0.95rem; box-shadow: none;" onclick="addStudentRow()">➕ 新增學生</button>
                             <button type="button" class="btn-save" style="background: var(--primary); padding: 6px 12px; font-size: 0.95rem; box-shadow: none;" onclick="applyStudentListChanges()">🔄 重新排序</button>
@@ -643,6 +689,39 @@
 
                 <!-- 分頁 3：考程設定 -->
                 <div id="tab-schedule" class="tab-pane">
+                    
+                    <div style="background: #fdf5f0; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px dashed var(--primary); transition: background 0.3s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <h3 style="margin:0; font-size: 1.1rem; color: var(--primary);">📤📥 本地考程匯出與匯入</h3>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                                <select id="exportSchTarget" style="padding: 4px; border-radius: 6px; font-size: 0.9rem; border: 1px solid var(--border-color);">
+                                    <option value="all">全部考程</option>
+                                    <option value="midterm">段考</option>
+                                    <option value="mock_normal">模考</option>
+                                    <option value="mock_cap">仿會考</option>
+                                </select>
+                                <button type="button" class="excel-btn-export" onclick="exportScheduleData()">指定考程匯出</button>
+                                
+                                <span style="border-left: 2px solid var(--border-color); height: 24px; margin: 0 5px;"></span>
+                                
+                                <label class="excel-btn-import">
+                                    考程 EXCEL 匯入 <input type="file" id="importScheduleFile" accept=".xlsx, .xls" style="display:none;" onchange="importScheduleData(event)">
+                                </label>
+                                <button type="button" class="excel-btn-paste" onclick="openSchedulePasteModal()">📋 從 EXCEL 貼上</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--warning-light); padding: 10px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px dashed var(--warning); flex-wrap: wrap; gap: 8px;">
+                        <div style="display: flex; align-items: center; flex-wrap: wrap;" class="flex-gap-10">
+                            <span style="font-weight: bold; color: var(--text-main);">📋 載入雲端考程模板：</span>
+                            <select id="templateSelect" onchange="window.dbActions.loadTemplate()" style="padding: 4px 8px; border-radius: 6px; font-size: 0.95rem; border: 1px solid var(--border-color);">
+                                <option value="" disabled selected>請選擇...</option>
+                            </select>
+                        </div>
+                        <span style="font-size: 0.85rem; color: var(--danger); font-weight: bold;">(選擇後自動套用，需按右下角「確定」才會生效)</span>
+                    </div>
+
                     <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; margin-bottom: 10px;">
                         <h3 style="color: var(--primary); margin: 0; font-size: 1.2rem;">📅 考程表編輯</h3>
                         <div>
@@ -677,8 +756,22 @@
                 <div id="tab-advanced" class="tab-pane">
                     <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 10px;">您目前的 Google 帳號授權： <strong id="advUserEmail">未登入</strong></p>
                     
+                    <!-- 全校學生名單管理 -->
+                    <div class="cloud-sync-card" style="border-color: var(--success); background: var(--success-light);">
+                        <h3 style="color: var(--success); margin: 0 0 10px 0; border-bottom: 2px dashed #a5d6b4; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🧑‍🎓 全校學生名單同步 (行政專用)</h3>
+                        <p style="text-align: left; margin-bottom: 10px; color: var(--text-main); font-weight: bold;">請從 Excel 複製「班級、座號、姓名」三個欄位，直接貼在下方框內：</p>
+                        <textarea id="globalStudentInput" placeholder="701&#9;1&#9;王小明&#10;701&#9;2&#9;陳大頭..." style="width: 100%; height: 120px; padding: 12px; border-radius: 8px; border: 2px solid #a5d6b4; font-size: 1rem; resize: none; margin-bottom: 10px;"></textarea>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="cloud-btn" style="background: var(--success); color: white; flex: 1; box-shadow: 0 4px 10px rgba(82, 150, 101, 0.3);" onclick="window.dbActions.uploadGlobalStudents()">☁️ 發佈至雲端 (全校立即套用)</button>
+                            <button class="cloud-btn" style="background: #4a72a8; color: white; flex: 1; box-shadow: 0 4px 10px rgba(74, 114, 168, 0.3);" onclick="window.dbActions.exportFormattedExcel()">📥 下載格式化 Excel (供備份至試算表)</button>
+                        </div>
+                        <button class="cloud-btn" style="background: #4a72a8; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.forceSync()">🔄 強制將 Firebase 資料備份至 Google 試算表</button>
+                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--success); text-align: left;">* 網頁前端無法直接寫入 Google 試算表。在此發佈至雲端後，全校各班會立刻抓取最新名單。<br>* 若需要備份至 Google 試算表，請點擊「強制備份至 Google 試算表」按鈕，系統將自動寫入試算表。</p>
+                    </div>
+
+                    <!-- 全校雲端考程同步 -->
                     <div class="cloud-sync-card">
-                        <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校雲端設定同步 (行政專用)</h3>
+                        <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程設定同步 (行政專用)</h3>
                         <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前設定好的「學期、考試項目、考程表」，一鍵發佈給全校各班下載更新。</p>
                         <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
                             <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前設定為最新全校公版</button>
@@ -731,6 +824,151 @@
         </div>
     </div>
 
+    <!-- 各種確認與說明 Modal 區塊 -->
+    <!-- 尚未儲存確認視窗 -->
+    <div class="modal-overlay" id="unsavedConfirmModal" style="z-index: 110;">
+        <div class="modal-content" style="width: 400px; height: auto; max-width: 90%;">
+            <div class="modal-header">
+                <h2>⚠️ 尚未儲存</h2>
+            </div>
+            <div class="modal-body" style="display: block; text-align: center; padding: 30px 20px; font-size: 1.2rem; font-weight: bold;">
+                您有尚未儲存的變更，<br>確定要放棄這些變更並關閉嗎？
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color); margin-right: 15px;" onclick="cancelCloseSettings()">繼續編輯</button>
+                <button class="btn-save" style="background: var(--danger); box-shadow: 0 4px 10px rgba(226, 88, 88, 0.3);" onclick="confirmCloseSettings()">放棄變更</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空/覆蓋 確認視窗 -->
+    <div class="modal-overlay" id="overwriteConfirmModal" style="z-index: 120;">
+        <div class="modal-content" style="width: 400px; height: auto; max-width: 90%;">
+            <div class="modal-header">
+                <h2 id="overwriteModalTitle">⚠️ 確認覆蓋</h2>
+            </div>
+            <div class="modal-body" style="display: block; text-align: center; padding: 30px 20px; font-size: 1.1rem; font-weight: bold;">
+                <span id="overwriteMsg">目前已有學生名單，執行此動作將會覆蓋原有資料，確定嗎？</span>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color); margin-right: 15px;" onclick="closeOverwriteConfirm()">取消</button>
+                <button class="btn-save" style="background: var(--danger); box-shadow: 0 4px 10px rgba(226, 88, 88, 0.3);" onclick="confirmOverwrite()">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 智慧回復系統 確認視窗 -->
+    <div class="modal-overlay" id="factoryResetConfirmModal" style="z-index: 140;">
+        <div class="modal-content" style="width: 450px; height: auto; max-width: 90%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #e25858, #c44545);">
+                <h2 style="color: white; margin: 0;">⚠️ 確認回復系統</h2>
+            </div>
+            <div class="modal-body" style="display: block; text-align: center; padding: 25px 20px; font-size: 1.1rem; font-weight: bold; color: var(--text-main);">
+                <div id="resetModalMsgNormal">
+                    確定要將系統「回復原始值」嗎？<br>
+                    <span style="font-size:0.95rem; color: var(--text-muted); font-weight:normal; display: block; margin-top: 10px;">系統將清空目前的班級與考程設定，並還原至最初出廠狀態。此動作無法復原！</span>
+                </div>
+                <div id="resetModalMsgCustom" style="display: none;">
+                    系統偵測到您有儲存過「自訂預設值」！<br>
+                    <span style="font-size:0.95rem; color: var(--text-muted); font-weight:normal; display: block; margin-top: 10px;">請問您想要回到您的自訂設定，還是徹底清除並回到出廠狀態？</span>
+                </div>
+            </div>
+            <div class="modal-footer" style="justify-content: center; flex-wrap: wrap; gap: 10px;" id="resetModalFooter">
+                <!-- JS 動態渲染按鈕 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 貼上名單視窗 -->
+    <div class="modal-overlay" id="pasteModal" style="z-index: 115;">
+        <div class="modal-content" style="width: 600px; height: auto; max-width: 95%;">
+            <div class="modal-header">
+                <h2>📋 從 EXCEL 貼上名單</h2>
+            </div>
+            <div class="modal-body" style="display: block; padding: 20px;">
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 5px; font-weight: bold;">
+                    請在 Excel 中選取名單範圍複製貼上。建議包含以下標題列：
+                </p>
+                <table class="example-table">
+                    <thead><tr><th>座號</th><th>姓名</th></tr></thead>
+                    <tbody>
+                        <tr><td>1</td><td>周杰倫</td></tr>
+                        <tr><td>2</td><td>鄧紫棋</td></tr>
+                        <tr><td colspan="2" style="color: var(--text-muted); font-style: italic; letter-spacing: 2px;">...</td></tr>
+                    </tbody>
+                </table>
+                <textarea id="pasteInputArea" style="width: 100%; height: 200px; border: 2px dashed var(--border-color); border-radius: 8px; padding: 12px; font-size: 1rem; background: #faf8f5; color: var(--text-main); resize: vertical; white-space: pre; overflow-x: auto;" placeholder="請在此貼上 Excel 內容..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color); margin-right: 15px;" onclick="closePasteModal()">取消</button>
+                <button class="btn-save" style="background: var(--success); box-shadow: 0 4px 10px rgba(82, 150, 101, 0.3);" onclick="processPasteData()">確定匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 貼上考程視窗 -->
+    <div class="modal-overlay" id="schedulePasteModal" style="z-index: 116;">
+        <div class="modal-content" style="width: 800px; height: auto; max-width: 95%;">
+            <div class="modal-header">
+                <h2>📋 從 EXCEL 貼上考程</h2>
+            </div>
+            <div class="modal-body" style="display: block; padding: 20px;">
+                <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 5px; font-weight: bold;">
+                    請在 Excel 中選取考程範圍複製貼上。建議包含以下標題列：
+                </p>
+                <table class="example-table">
+                    <thead>
+                        <tr><th>模板</th><th>天數</th><th>開始時間</th><th>結束時間</th><th>考試科目</th><th>備註</th><th>列入正式考試</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>段考</td><td>1</td><td>08:35</td><td>09:25</td><td>作文</td><td></td><td>是</td></tr>
+                        <tr><td colspan="7" style="color: var(--text-muted); font-style: italic; letter-spacing: 2px;">...</td></tr>
+                    </tbody>
+                </table>
+                <textarea id="schedulePasteInputArea" style="width: 100%; height: 200px; border: 2px dashed var(--border-color); border-radius: 8px; padding: 12px; font-size: 1rem; background: #faf8f5; color: var(--text-main); resize: vertical; white-space: pre; overflow-x: auto;" placeholder="請在此貼上 Excel 內容..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color); margin-right: 15px;" onclick="closeSchedulePasteModal()">取消</button>
+                <button class="btn-save" style="background: var(--success); box-shadow: 0 4px 10px rgba(82, 150, 101, 0.3);" onclick="processSchedulePasteData()">確定匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 功能說明視窗 -->
+    <div class="modal-overlay" id="instructionModal" style="z-index: 150;">
+        <div class="modal-content" style="width: 600px; height: auto; max-width: 95%;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                <h2>ℹ️ 系統功能與匯入匯出說明</h2>
+            </div>
+            <div class="modal-body" style="display: block; padding: 20px; line-height: 1.6; color: var(--text-main); text-align: left; font-size: 1rem; height: 60vh; overflow-y: auto;">
+                
+                <h3 style="color: var(--primary); margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">📝 一般設定與預設值</h3>
+                <ul style="margin-bottom: 15px; padding-left: 20px;">
+                    <li style="margin-bottom: 5px;"><b>設為預設值：</b> 點擊右上角「<span style="color:#3b82f6; font-weight:bold;">💾 設為預設值</span>」，系統會將您目前設定的班級、名單與考程，儲存為您的專屬預設值。</li>
+                    <li style="margin-bottom: 5px;"><b>回復原始值：</b> 若資料混亂，點擊右上角「<span style="color:var(--danger); font-weight:bold;">⚠️ 回復原始值</span>」即可瞬間還原到您儲存的預設狀態（若未設定則為出廠狀態）。</li>
+                </ul>
+
+                <h3 style="color: var(--primary); margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">🧑‍🎓 學生名單手動匯出、匯入與貼上</h3>
+                <ul style="margin-bottom: 15px; padding-left: 20px;">
+                    <li style="margin-bottom: 5px;"><b>匯出格式：</b> 匯出的 Excel 將自動標記缺考與抽離，方便您查閱。</li>
+                    <li style="margin-bottom: 5px;"><b>匯入格式要求：</b> Excel 需要有 <b style="color:var(--danger);">「座號」</b> 與 <b style="color:var(--danger);">「姓名」</b> 兩欄。</li>
+                    <li style="margin-bottom: 5px;"><b>智慧隱藏空號：</b> 只要有一人填寫姓名，系統就會進入「姓名模式」，若其他座號沒有填寫姓名，系統會視為「無此人」並自動從點名區隱藏。</li>
+                    <li style="margin-bottom: 5px;"><b>貼上名單：</b> 在 Excel 複製包含標題的名單範圍，點擊「📋 從 EXCEL 貼上」即可快速匯入。</li>
+                </ul>
+
+                <h3 style="color: var(--primary); margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 4px;">📅 本地考程手動匯出與匯入</h3>
+                <ul style="margin-bottom: 15px; padding-left: 20px;">
+                    <li style="margin-bottom: 5px;">可選擇匯出「單一模板」或「全部考程」。匯出的 Excel 已經為您設定好標準格式與填寫說明。</li>
+                    <li style="margin-bottom: 5px;">系統會自動讀取資料中的 <b style="color:var(--danger);">「模板」</b> 欄位來進行歸類。若無填寫則預設歸入 <b style="color:var(--success);">「段考」</b>。</li>
+                    <li style="margin-bottom: 5px;"><b style="color:var(--warning);">自動學習自訂模板：</b> 若在模板欄位輸入全新的名稱，系統將自動為您新增該模板供後續切換！</li>
+                </ul>
+            </div>
+            <div class="modal-footer" style="justify-content: center;">
+                <button class="btn-save" style="background: #4b5563; box-shadow: 0 4px 10px rgba(107, 114, 128, 0.3); padding: 8px 30px;" onclick="closeInstructionModal()">了解</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 訊息提示 Modal -->
     <div class="modal-overlay" id="messageModal" style="z-index: 10010;">
         <div class="modal-content" style="width: 350px; height: auto; max-width: 90%;">
@@ -748,7 +986,36 @@
 
 <script>
     // === 核心資料區 ===
-    var appData = {
+    // 您的專屬 GAS 應用程式網址
+    const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyEi7vDIjiBg9FHdjWFtq962NgANOQ2Z65e19FcFC7lyf598mwEdQsMnDuKYdhL1PSQ/exec";
+    const GAS_TOKEN = "fengjia_secure_2026"; // 必須與 GAS 的設定匹配
+
+    var defaultScheduleTemplates = {
+        "midterm": {
+            "1": [
+                { start: "08:35", end: "09:25", subject: "作文", note: "", isExam: true },
+                { start: "09:40", end: "10:30", subject: "自習", note: "", isExam: false },
+                { start: "10:45", end: "11:45", subject: "數學", note: "", isExam: true },
+                { start: "11:45", end: "12:45", subject: "午餐、打掃", note: "", isExam: false },
+                { start: "12:45", end: "13:30", subject: "午休", note: "", isExam: false },
+                { start: "13:45", end: "14:35", subject: "自習", note: "", isExam: false },
+                { start: "14:50", end: "15:50", subject: "社會", note: "歷史、地理、公民合科", isExam: true },
+                { start: "15:50", end: "16:00", subject: "學生放學", note: "", isExam: false }
+            ],
+            "2": [
+                { start: "08:25", end: "09:25", subject: "英語", note: "08:40 播放英聽測驗", isExam: true },
+                { start: "09:40", end: "10:30", subject: "自習", note: "", isExam: false },
+                { start: "10:45", end: "11:45", subject: "國文", note: "", isExam: true },
+                { start: "11:45", end: "12:45", subject: "午餐、打掃", note: "", isExam: false },
+                { start: "12:45", end: "13:30", subject: "午休", note: "", isExam: false },
+                { start: "13:45", end: "14:35", subject: "自習", note: "", isExam: false },
+                { start: "14:50", end: "15:50", subject: "自然", note: "理化、地科合科", isExam: true },
+                { start: "15:50", end: "16:00", subject: "學生放學", note: "", isExam: false }
+            ]
+        }
+    };
+
+    var defaultAppData = {
         theme: "light", schoolName: "鳳甲國中", academicYear: "114學年度", semester: "第1學期",
         examType: "第3次定期評量", examOption: "第3次定期評量", mainTitle: "鳳甲國中 114學年度第1學期第3次定期評量",
         grade: "7", classNum: "01", className: "701",
@@ -758,27 +1025,17 @@
         expectedCount: "30", actualCount: "30", absentCount: "0", pulloutCount: "0",
         notes: "無", teacherTips: "1. 鐘響前請收妥書本\n2. 記得寫上班級、姓名、座號\n3. 考試結束請立即停筆",
         displayDay: "1",
-        lastReceivedMsgId: "", 
-        lastSyncAt: 0,
-        userEmail: "", 
-        isAdmin: false, // 紀錄是否為白名單管理員
-        schedules: {
-            "1": [
-                { start: "08:35", end: "09:25", subject: "作文", note: "", isExam: true },
-                { start: "09:40", end: "10:30", subject: "自習", note: "", isExam: false }
-            ],
-            "2": [
-                { start: "08:25", end: "09:25", subject: "英語", note: "08:40 播放英聽測驗", isExam: true }
-            ]
-        }
+        lastReceivedMsgId: "", lastSyncAt: 0, userEmail: "", isAdmin: false,
+        activeTemplate: "midterm",
+        scheduleTemplates: JSON.parse(JSON.stringify(defaultScheduleTemplates)),
+        schedules: JSON.parse(JSON.stringify(defaultScheduleTemplates["midterm"]))
     };
-    
-    // Google Sheets URL
-    const SHEET_ID = "1yMxuVQXC1DlHEtYoTDwrF37DS9s7Ezr0cDmk7--PUPA";
-    const CSV_URL_STUDENTS = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=學生`;
-    const CSV_URL_WHITELIST = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=白名單`;
 
+    var appData = JSON.parse(JSON.stringify(defaultAppData));
     var audioEnabled = false;
+    var lastSpokenEvent = "";
+    var isDirty = false;
+    var appDataBackup = "";
 
     // 動態更新登入班級選單
     function updateLoginClasses() {
@@ -802,6 +1059,16 @@
         return n < 10 ? '0' + n : n.toString();
     }
 
+    function normalizeTime(t) {
+        if(!t) return "";
+        let str = String(t).trim();
+        let parts = str.split(":");
+        if(parts.length >= 2) {
+            return parts[0].padStart(2, '0') + ":" + parts[1].padStart(2, '0');
+        }
+        return str;
+    }
+
     function showMessageModal(text, isError = false) {
         document.getElementById("messageModalText").innerText = text;
         var header = document.getElementById("messageModalHeader");
@@ -816,29 +1083,21 @@
         document.getElementById("messageModal").style.display = "flex";
     }
 
-    // CSV Parser
-    function parseCSV(text) {
-        let p = '', row = [''], ret = [row], i = 0, r = 0, s = !0, l;
-        for (l of text) {
-            if ('"' === l) { if (s && l === p) row[i] += l; s = !s; } 
-            else if (',' === l && s) l = row[++i] = '';
-            else if ('\n' === l && s) {
-                if ('\r' === p) row[i] = row[i].slice(0, -1);
-                row = ret[++r] = [l = '']; i = 0;
-            } else row[i] += l;
-            p = l;
-        }
-        return ret.filter(r => r.length > 0 && r[0] !== '');
+    function closeMessageModal() {
+        document.getElementById("messageModal").style.display = "none";
     }
 
-    async function fetchGoogleSheetCSV(url) {
+    // 與 Google Apps Script API 溝通的共用函數
+    async function fetchFromGAS(action, params = "") {
+        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}`;
         try {
             const res = await fetch(url);
-            const text = await res.text();
-            return parseCSV(text);
+            const json = await res.json();
+            if(json.error) throw new Error(json.error);
+            return json.data;
         } catch(e) {
-            console.error(e);
-            return [];
+            console.error("GAS Fetch Error:", e);
+            return null;
         }
     }
 
@@ -846,6 +1105,7 @@
     function toggleTheme() {
         appData.theme = (appData.theme === "dark") ? "light" : "dark";
         applyTheme();
+        saveDataToStorage();
     }
 
     function applyTheme() {
@@ -878,12 +1138,14 @@
     function toggleNameDisplay() {
         appData.showName = !appData.showName;
         document.getElementById("btnToggleName").innerHTML = appData.showName ? "👁️ 隱藏姓名" : "👁️‍🗨️ 顯示姓名";
+        saveDataToStorage();
         generateStudentChips(); renderMainDisplay();    
     }
 
     function toggleScheduleMode() {
         appData.scheduleMode = (appData.scheduleMode === "partial") ? "full" : "partial";
         document.getElementById("btnToggleSchedule").innerText = (appData.scheduleMode === "partial") ? "切換完整顯示" : "切換部分顯示";
+        saveDataToStorage();
         updateClock(); 
     }
 
@@ -987,6 +1249,17 @@
                 statusClass = "status-break"; statusHtml = "🍵 目前狀態：" + item.subject;
                 countdownHtml = "【" + item.subject + "】結束倒數 <span class='countdown-time'>" + remain2 + "</span>";
             }
+
+            if (exactTimeStr === (item.end + ":00") && item.isExam && lastSpokenEvent !== (item.end + "-end")) {
+                speak("考試結束，請立即停筆");
+                lastSpokenEvent = item.end + "-end";
+            }
+            
+            if (appData.displayDay === "2" && item.subject.indexOf("英語") !== -1 && exactTimeStr === "08:40:00" && lastSpokenEvent !== "english-listening") {
+                speak("英聽測驗時間到，請監考老師開始播放設備");
+                lastSpokenEvent = "english-listening";
+            }
+            
         } else if (nextIndex !== -1) {
             targetRowIndex = nextIndex;
             var nextItem = schedule[nextIndex];
@@ -999,6 +1272,11 @@
             if (nextItem.isExam && currentTimeStr >= preTimeStr) {
                 statusClass = "status-preparing"; statusHtml = "🔔 準備中，下一節：" + nextItem.subject;
                 countdownHtml = "即將考【" + nextItem.subject + "】 倒數 <span class='countdown-time'>" + remain + "</span>";
+                
+                if (exactTimeStr === (preTimeStr + ":00") && lastSpokenEvent !== (nextItem.start + "-prepare")) {
+                    speak("現在是準備時間，下一節考" + nextItem.subject + "，請考生準備");
+                    lastSpokenEvent = nextItem.start + "-prepare";
+                }
             } else {
                 statusClass = "status-break"; statusHtml = "☕ 休息/準備時間";
                 countdownHtml = "距離【" + nextItem.subject + "】還有 <span class='countdown-time'>" + remain + "</span>";
@@ -1041,8 +1319,61 @@
         }
     }
 
-    function toggleAudio() { /* Simple stub */ }
-    function toggleFullScreen() { /* Simple stub */ }
+    function toggleAudio() {
+        var btn = document.getElementById("btnEnableAudio");
+        var icon = document.getElementById("audioIcon");
+        var text = document.getElementById("audioText");
+        
+        if (!audioEnabled) {
+            audioEnabled = true;
+            btn.classList.add("active");
+            icon.innerText = "🔊";
+            text.innerText = "語音提醒已開啟";
+            if ('speechSynthesis' in window) {
+                var utterance = new SpeechSynthesisUtterance("語音已啟用");
+                utterance.volume = 0; window.speechSynthesis.speak(utterance);
+            }
+        } else {
+            audioEnabled = false;
+            btn.classList.remove("active");
+            icon.innerText = "🔇";
+            text.innerText = "語音提醒";
+        }
+    }
+
+    function speak(text) {
+        if (!audioEnabled || !('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-TW';
+        utterance.rate = 0.9;
+        window.speechSynthesis.speak(utterance);
+    }
+    
+    function toggleFullScreen() {
+        if (!document.fullscreenElement &&  
+            !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+            } else if (document.documentElement.mozRequestFullScreen) {
+                document.documentElement.mozRequestFullScreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
 
     // ====== Modal & Settings UI ======
     function switchTab(tabId) {
@@ -1057,6 +1388,9 @@
     }
 
     function openSettings() {
+        appDataBackup = JSON.stringify(appData); 
+        isDirty = false; 
+
         document.getElementById("setSchoolName").value = appData.schoolName;
         document.getElementById("setAcademicYear").value = appData.academicYear;
         document.getElementById("setSemester").value = appData.semester;
@@ -1068,10 +1402,47 @@
 
         document.getElementById("setTips").value = appData.teacherTips;
         
-        renderDateInputs(); renderDaySelect();
-        switchTab('tab-general'); renderSettingsSchedule(); renderStudentsTab();      
+        updateTemplateDropdowns();
+        renderDateInputs(); 
+        renderDaySelect();
+        switchTab('tab-general'); 
+        renderSettingsSchedule(); 
+        renderStudentsTab();      
         generateStudentChips();
         document.getElementById("settingsModal").style.display = "flex";
+    }
+
+    function updateTemplateDropdowns() {
+        var tSelect = document.getElementById("templateSelect");
+        var eSelect = document.getElementById("exportSchTarget");
+        if (!tSelect || !eSelect) return;
+
+        var builtIn = { "midterm": "段考", "mock_normal": "模考", "mock_cap": "仿會考" };
+
+        var tVal = appData.activeTemplate || "midterm";
+        var eVal = eSelect.value;
+
+        tSelect.innerHTML = '<option value="" disabled>請選擇...</option>';
+        for (var key in appData.scheduleTemplates) {
+            var opt = document.createElement("option");
+            opt.value = key;
+            opt.innerText = builtIn[key] ? builtIn[key] : key;
+            tSelect.appendChild(opt);
+        }
+
+        eSelect.innerHTML = '<option value="all">全部考程</option>';
+        for (var key in appData.scheduleTemplates) {
+            var opt = document.createElement("option");
+            opt.value = key;
+            opt.innerText = builtIn[key] ? builtIn[key] : key;
+            eSelect.appendChild(opt);
+        }
+        
+        if (appData.scheduleTemplates[tVal]) tSelect.value = tVal;
+        else tSelect.value = "";
+        
+        if (eVal && eSelect.querySelector('option[value="'+eVal+'"]')) eSelect.value = eVal;
+        else eSelect.value = "all";
     }
 
     function toggleCustomExam() {
@@ -1087,7 +1458,28 @@
         }
     }
 
-    function requestCloseSettings() { document.getElementById("settingsModal").style.display = "none"; }
+    function requestCloseSettings() { 
+        if (isDirty) {
+            document.getElementById("unsavedConfirmModal").style.display = "flex";
+        } else {
+            document.getElementById("settingsModal").style.display = "none";
+        }
+    }
+
+    function confirmCloseSettings() {
+        document.getElementById("unsavedConfirmModal").style.display = "none";
+        if (appDataBackup) {
+            appData = JSON.parse(appDataBackup); 
+            renderMainDisplay(); 
+        }
+        document.getElementById("settingsModal").style.display = "none";
+        isDirty = false;
+    }
+
+    function cancelCloseSettings() {
+        document.getElementById("unsavedConfirmModal").style.display = "none";
+    }
+
     function switchSettingsDay() {
         saveSettingsScheduleToMemory(appData.displayDay);
         appData.displayDay = document.getElementById("setDaySelect").value;
@@ -1110,6 +1502,7 @@
     }
 
     function addExamDay() {
+        isDirty = true;
         appData.totalDays++; appData.examDates[appData.totalDays] = "";
         appData.schedules[appData.totalDays] = [{ start: "08:00", end: "09:00", subject: "自習", note: "", isExam: false }];
         renderDateInputs(); renderDaySelect(); saveSettingsScheduleToMemory(appData.displayDay);
@@ -1119,6 +1512,7 @@
 
     function removeExamDay() {
         if (appData.totalDays <= 1) return; 
+        isDirty = true;
         delete appData.examDates[appData.totalDays]; delete appData.schedules[appData.totalDays];
         appData.totalDays--;
         if (parseInt(appData.displayDay) > appData.totalDays) appData.displayDay = String(appData.totalDays);
@@ -1128,6 +1522,8 @@
     function renderSettingsSchedule() {
         var tbody = document.getElementById("settingsScheduleBody"); tbody.innerHTML = "";
         var schedule = appData.schedules[appData.displayDay] || [];
+        var commonSubjects = ["國文", "英語", "英語(閱讀)", "英語(聽力)", "數學", "自然", "社會", "歷史", "地理", "公民", "理化", "生物", "地球科學", "健教", "作文", "自習", "休息", "午休", "午餐、打掃", "午餐、午休", "學生放學", "正常上課"];
+
         var createTimeSelect = function(idPrefix, index, defaultTime) {
             var parts = (defaultTime || "").split(":"), h = parts[0] || "", m = parts[1] || "";
             var hOpts = '<option value="">--</option>', mOpts = '<option value="">--</option>';
@@ -1135,10 +1531,25 @@
             for(var i=0; i<60; i++) { var val = padZero(i); mOpts += `<option value='${val}' ${val===m?'selected':''}>${val}</option>`; }
             return `<div style='display:flex;gap:4px;'><select id='${idPrefix}-h-${index}'>${hOpts}</select>:<select id='${idPrefix}-m-${index}'>${mOpts}</select></div>`;
         };
+        
         schedule.forEach((item, index) => {
             var tr = document.createElement("tr");
+            var isCustom = (item.subject && item.subject !== "" && commonSubjects.indexOf(item.subject) === -1);
+            var selOpts = '<option value="">請選擇...</option>';
+            commonSubjects.forEach(function(sub) {
+                var selected = (!isCustom && item.subject === sub) ? "selected" : "";
+                selOpts += "<option value='" + sub + "' " + selected + ">" + sub + "</option>";
+            });
+            selOpts += "<option value='custom' " + (isCustom ? "selected" : "") + ">✏️ 自訂...</option>";
+
+            var subjectInputHTML = 
+                "<div style='display: flex; flex-direction: column; gap: 4px;'>" +
+                    "<select id='sched-sub-sel-" + index + "' onchange='window.toggleSchedSubj(" + index + ")'>" + selOpts + "</select>" +
+                    "<input type='text' id='sched-sub-" + index + "' value='" + (item.subject || '') + "' placeholder='輸入自訂科目' style='display: " + (isCustom ? "block" : "none") + ";'>" +
+                "</div>";
+
             tr.innerHTML = `<td>${createTimeSelect('sched-start', index, item.start)}</td><td>${createTimeSelect('sched-end', index, item.end)}</td>` +
-                `<td><input type='text' list='subjectList' id='sched-sub-${index}' value='${item.subject||''}'></td>` +
+                `<td>${subjectInputHTML}</td>` +
                 `<td><input type='text' id='sched-note-${index}' value='${item.note||''}'></td>` +
                 `<td><input type='checkbox' id='sched-exam-${index}' ${item.isExam ? "checked" : ""}></td>` +
                 `<td><button style='color:var(--danger);background:transparent;border:none;' onclick='deleteScheduleRow(${index})'>🗑️</button></td>`;
@@ -1146,14 +1557,42 @@
         });
     }
 
+    window.toggleSchedSubj = function(index) {
+        var sel = document.getElementById("sched-sub-sel-" + index);
+        var inp = document.getElementById("sched-sub-" + index);
+        if (sel && inp) {
+            if (sel.value === "custom") {
+                inp.style.display = "block";
+                inp.focus();
+            } else {
+                inp.style.display = "none";
+                inp.value = sel.value;
+            }
+        }
+    };
+
     function addScheduleRow() {
+        isDirty = true;
         saveSettingsScheduleToMemory(appData.displayDay);
         if(!appData.schedules[appData.displayDay]) appData.schedules[appData.displayDay] = [];
-        appData.schedules[appData.displayDay].push({ start: "", end: "", subject: "", note: "", isExam: false });
+        
+        var newStart = "", newEnd = "";
+        var schedule = appData.schedules[appData.displayDay];
+        if (schedule.length > 0 && schedule[schedule.length - 1].end !== "") {
+            newStart = schedule[schedule.length - 1].end;
+            var parts = newStart.split(":");
+            var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+            m += 50; 
+            if (m >= 60) { h += 1; m -= 60; }
+            newEnd = padZero(h) + ":" + padZero(m);
+        }
+
+        appData.schedules[appData.displayDay].push({ start: newStart, end: newEnd, subject: "", note: "", isExam: false });
         renderSettingsSchedule();
     }
 
     function deleteScheduleRow(index) {
+        isDirty = true;
         saveSettingsScheduleToMemory(appData.displayDay);
         appData.schedules[appData.displayDay].splice(index, 1);
         renderSettingsSchedule();
@@ -1162,32 +1601,470 @@
     function saveSettingsScheduleToMemory(day) {
         var schedule = appData.schedules[day] || [];
         for (var i = 0; i < schedule.length; i++) {
-            var startH = document.getElementById(`sched-start-h-${i}`).value, startM = document.getElementById(`sched-start-m-${i}`).value;
-            schedule[i].start = (startH !== "" && startM !== "") ? `${startH}:${startM}` : "";
-            var endH = document.getElementById(`sched-end-h-${i}`).value, endM = document.getElementById(`sched-end-m-${i}`).value;
-            schedule[i].end = (endH !== "" && endM !== "") ? `${endH}:${endM}` : "";
-            schedule[i].subject = document.getElementById(`sched-sub-${i}`).value;
-            schedule[i].note = document.getElementById(`sched-note-${i}`).value;
-            schedule[i].isExam = document.getElementById(`sched-exam-${i}`).checked;
+            var startH = document.getElementById(`sched-start-h-${i}`), startM = document.getElementById(`sched-start-m-${i}`);
+            if (startH && startM) schedule[i].start = (startH.value !== "" && startM.value !== "") ? `${startH.value}:${startM.value}` : "";
+            
+            var endH = document.getElementById(`sched-end-h-${i}`), endM = document.getElementById(`sched-end-m-${i}`);
+            if (endH && endM) schedule[i].end = (endH.value !== "" && endM.value !== "") ? `${endH.value}:${endM.value}` : "";
+            
+            var sel = document.getElementById("sched-sub-sel-" + i);
+            var inp = document.getElementById("sched-sub-" + i);
+            if (sel && sel.value !== "custom") schedule[i].subject = sel.value;
+            else if (inp) schedule[i].subject = inp.value.trim();
+            else schedule[i].subject = "";
+
+            var note = document.getElementById(`sched-note-${i}`);
+            if (note) schedule[i].note = note.value;
+            var exam = document.getElementById(`sched-exam-${i}`);
+            if (exam) schedule[i].isExam = exam.checked;
         }
     }
 
-    function getListFromBox(boxId) {
-        var box = document.getElementById(boxId); var list = [];
-        if(box) { for (var i = 1; i < box.children.length; i++) list.push(parseInt(box.children[i].dataset.number)); }
-        return list;
+    // ====== 本地 Excel 匯入匯出 (學生與考程) ======
+    function applyExcelStyles(ws, colsWidth, isStudentSheet) {
+        var defaultStyle = {
+            font: { name: "微軟正黑體", sz: 12 },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: { top: { style: "thin", color: { rgb: "000000" } }, bottom: { style: "thin", color: { rgb: "000000" } }, left: { style: "thin", color: { rgb: "000000" } }, right: { style: "thin", color: { rgb: "000000" } } }
+        };
+        var headerStyle = JSON.parse(JSON.stringify(defaultStyle)); headerStyle.font.bold = true; headerStyle.fill = { fgColor: { rgb: "E7E6E6" } };
+        var absentStyle = JSON.parse(JSON.stringify(defaultStyle)); absentStyle.fill = { fgColor: { rgb: "FFC7CE" } };
+        var pulloutStyle = JSON.parse(JSON.stringify(defaultStyle)); pulloutStyle.fill = { fgColor: { rgb: "FFE599" } };
+
+        var range = XLSX.utils.decode_range(ws['!ref']);
+        for (var R = range.s.r; R <= range.e.r; ++R) {
+            var rowStatus = "";
+            if (isStudentSheet && R > 0) {
+                var statusCell = ws[XLSX.utils.encode_cell({r: R, c: 2})];
+                if (statusCell && statusCell.v) rowStatus = statusCell.v;
+            }
+            for (var C = range.s.c; C <= range.e.c; ++C) {
+                var cellRef = XLSX.utils.encode_cell({c: C, r: R});
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' }; 
+                if (R === 0) ws[cellRef].s = headerStyle;
+                else if (isStudentSheet && rowStatus === "缺考") ws[cellRef].s = absentStyle;
+                else if (isStudentSheet && rowStatus === "抽離") ws[cellRef].s = pulloutStyle;
+                else ws[cellRef].s = defaultStyle;
+            }
+        }
+        if (colsWidth) ws['!cols'] = colsWidth;
+    }
+
+    function exportExcel() {
+        if (typeof XLSX === 'undefined') { showMessageModal("載入 Excel 模組失敗，請檢查網路連線。", true); return; }
+        var data = [];
+        var totalCount = appData.totalSeats || 30;
+        for (var i = 1; i <= totalCount; i++) {
+            var status = "";
+            if (appData.absentList.indexOf(i) !== -1) status = "缺考";
+            else if (appData.pulloutList.indexOf(i) !== -1) status = "抽離";
+            data.push({ "座號": i, "姓名": appData.students[i] || "", "狀態": status });
+        }
+        var ws = XLSX.utils.json_to_sheet(data);
+        applyExcelStyles(ws, [{ wch: 10 }, { wch: 18 }, { wch: 12 }], true);
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "學生名單");
+        var fileName = (appData.academicYear||"") + (appData.semester||"") + (appData.examType||"") + "_" + (appData.className||"段考助手") + "_學生名單(缺考).xlsx";
+        XLSX.writeFile(wb, fileName);
+    }
+
+    function handleImportChange(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        confirmListAction('import', file);
+        e.target.value = ""; 
+    }
+
+    function executeImport(file) {
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                var data = new Uint8Array(evt.target.result);
+                var workbook = XLSX.read(data, {type: 'array'});
+                var json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                if (json.length > 0) {
+                    var tempStudents = {}; var count = 0;
+                    json.forEach(function(row) {
+                        var num = parseInt(row["座號"]);
+                        var name = (row["姓名"] || "").toString().trim();
+                        if (!isNaN(num) && num > 0) { tempStudents[num] = name; count++; }
+                    });
+                    if (count > 0) {
+                        appData.students = tempStudents;
+                        appData.absentList = []; appData.pulloutList = []; appData.showName = true;
+                        updateToggleButtonUI(); syncStateAndSave(true);
+                        showMessageModal("匯入成功！共載入 " + count + " 位學生資料。");
+                    } else showMessageModal("找不到有效的「座號」資料。", true);
+                } else showMessageModal("Excel 內容為空！", true);
+            } catch(err) { showMessageModal("讀取檔案失敗：" + err, true); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function openPasteModal() {
+        document.getElementById("pasteInputArea").value = "";
+        document.getElementById("pasteModal").style.display = "flex";
+        setTimeout(() => document.getElementById("pasteInputArea").focus(), 100);
+    }
+    function closePasteModal() { document.getElementById("pasteModal").style.display = "none"; }
+    function processPasteData() {
+        var text = document.getElementById("pasteInputArea").value.trim();
+        if (!text) { showMessageModal("請先貼上資料！", true); return; }
+        confirmListAction('paste', text);
+    }
+
+    function executePaste(text) {
+        var lines = text.split('\n');
+        var headers = lines[0].split('\t');
+        var hasHeader = headers.some(h => h.indexOf("座號") !== -1 || h.indexOf("姓名") !== -1);
+        var idxMap = { seat: 0, name: 1 };
+        if (hasHeader) {
+            var tempSeat = headers.findIndex(h => h.trim().indexOf("座號") !== -1);
+            var tempName = headers.findIndex(h => h.trim().indexOf("姓名") !== -1);
+            if (tempSeat !== -1) idxMap.seat = tempSeat;
+            if (tempName !== -1) idxMap.name = tempName;
+        }
+
+        var tempStudents = {}; var count = 0;
+        for (var i = (hasHeader ? 1 : 0); i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            var cols = lines[i].split('\t');
+            if (cols.length < 2) cols = lines[i].trim().split(/\s+/);
+            if (cols.length >= 2) {
+                var seatStr = cols[idxMap.seat] ? cols[idxMap.seat].trim() : "";
+                var nameStr = cols[idxMap.name] ? cols[idxMap.name].trim() : "";
+                if (isNaN(parseInt(seatStr)) && !isNaN(parseInt(nameStr))) {
+                    let temp = seatStr; seatStr = nameStr; nameStr = temp;
+                }
+                var num = parseInt(seatStr);
+                if (!isNaN(num) && num > 0 && nameStr !== "姓名") {
+                    tempStudents[num] = nameStr === "" ? "" : nameStr; count++;
+                }
+            }
+        }
+
+        if (count > 0) {
+            appData.students = tempStudents;
+            appData.absentList = []; appData.pulloutList = []; appData.showName = true;
+            updateToggleButtonUI(); syncStateAndSave(true); closePasteModal();
+            showMessageModal("貼上成功！共辨識 " + count + " 位學生資料。");
+        } else showMessageModal("找不到有效的座號與姓名資料。", true);
+    }
+
+    function exportScheduleData() {
+        if (typeof XLSX === 'undefined') { showMessageModal("載入 Excel 模組失敗，請檢查網路連線。", true); return; }
+        var wb = XLSX.utils.book_new();
+        var target = document.getElementById("exportSchTarget").value;
+
+        function buildSchData(tmplObj, tmplName) {
+            let res = [];
+            let maxDay = Math.max(...Object.keys(tmplObj).map(Number));
+            if(maxDay < 1 || !isFinite(maxDay)) maxDay = 1;
+            for(let d=1; d<=maxDay; d++) {
+                let arr = tmplObj[d] || [];
+                if(arr.length === 0) {
+                    res.push({"模板": tmplName, "天數": d, "開始時間": "08:00", "結束時間": "09:00", "考試科目": "自習", "備註": "", "列入正式考試": "否", "填寫說明": "預設空白考程"});
+                } else {
+                    arr.forEach(item => {
+                        res.push({
+                            "模板": tmplName, "天數": d, "開始時間": item.start || "08:00", "結束時間": item.end || "09:00",
+                            "考試科目": item.subject || "無", "備註": item.note || "", "列入正式考試": item.isExam ? "是" : "否", "填寫說明": "格式: HH:MM / 是或否"
+                        });
+                    });
+                }
+            }
+            return res;
+        }
+
+        let combinedData = [];
+        if (target === 'all') {
+            for (var key in appData.scheduleTemplates) {
+                combinedData = combinedData.concat(buildSchData(appData.scheduleTemplates[key], key));
+            }
+        } else if (appData.scheduleTemplates[target]) {
+            combinedData = combinedData.concat(buildSchData(appData.scheduleTemplates[target], target));
+        }
+
+        var wsSch = XLSX.utils.json_to_sheet(combinedData);
+        applyExcelStyles(wsSch, [{wch: 10}, {wch: 8}, {wch: 15}, {wch: 15}, {wch: 20}, {wch: 35}, {wch: 15}, {wch: 25}], false);
+        XLSX.utils.book_append_sheet(wb, wsSch, "考程表");
+
+        var fileName = "段考助手_考程表" + (target === 'all' ? "" : `(${target})`) + ".xlsx";
+        XLSX.writeFile(wb, fileName);
+    }
+
+    function importScheduleData(e) {
+        var file = e.target.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+
+        reader.onload = function(evt) {
+            try {
+                var data = new Uint8Array(evt.target.result);
+                var workbook = XLSX.read(data, {type: 'array'});
+                var schRows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {raw: false});
+                processScheduleJSON(schRows);
+            } catch(err) { showMessageModal("讀取檔案失敗：" + err, true); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = "";
+    }
+
+    function openSchedulePasteModal() {
+        document.getElementById("schedulePasteInputArea").value = "";
+        document.getElementById("schedulePasteModal").style.display = "flex";
+        setTimeout(() => document.getElementById("schedulePasteInputArea").focus(), 100);
+    }
+    function closeSchedulePasteModal() { document.getElementById("schedulePasteModal").style.display = "none"; }
+    
+    function processSchedulePasteData() {
+        var text = document.getElementById("schedulePasteInputArea").value.trim();
+        if (!text) { showMessageModal("請先貼上資料！", true); return; }
+        
+        var lines = text.split('\n');
+        var headers = lines[0].split('\t');
+        var hasHeader = headers.some(h => h.indexOf("天數") !== -1 || h.indexOf("時間") !== -1);
+        
+        var idxMap = { tmpl: -1, day: 0, start: 1, end: 2, subj: 3, note: 4, exam: 5 };
+        if (hasHeader) {
+            idxMap.tmpl = headers.findIndex(h => h.trim() === "模板");
+            idxMap.day = headers.findIndex(h => h.trim() === "天數");
+            idxMap.start = headers.findIndex(h => h.trim() === "開始時間");
+            idxMap.end = headers.findIndex(h => h.trim() === "結束時間");
+            idxMap.subj = headers.findIndex(h => h.trim() === "考試科目");
+            idxMap.note = headers.findIndex(h => h.trim() === "備註");
+            idxMap.exam = headers.findIndex(h => h.trim() === "列入正式考試");
+        } else {
+            let firstVal = lines[0].split('\t')[0].trim();
+            if (firstVal === "段考" || firstVal === "模考" || firstVal === "仿會考") {
+                idxMap = { tmpl: 0, day: 1, start: 2, end: 3, subj: 4, note: 5, exam: 6 };
+            }
+        }
+        
+        let schRows = [];
+        for (var i = (hasHeader ? 1 : 0); i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            var cols = lines[i].split('\t');
+            schRows.push({
+                "模板": idxMap.tmpl !== -1 ? cols[idxMap.tmpl] : "",
+                "天數": idxMap.day !== -1 ? cols[idxMap.day] : cols[0],
+                "開始時間": idxMap.start !== -1 ? cols[idxMap.start] : "",
+                "結束時間": idxMap.end !== -1 ? cols[idxMap.end] : "",
+                "考試科目": idxMap.subj !== -1 ? cols[idxMap.subj] : "",
+                "備註": idxMap.note !== -1 ? cols[idxMap.note] : "",
+                "列入正式考試": idxMap.exam !== -1 ? cols[idxMap.exam] : ""
+            });
+        }
+        processScheduleJSON(schRows, true);
+    }
+
+    function processScheduleJSON(schRows, isPaste = false) {
+        let importedTmpls = new Set();
+        let newTemplates = {};
+        let maxDays = {};
+        var count = 0;
+        
+        schRows.forEach(r => {
+            let tmplName = r["模板"] ? String(r["模板"]).trim() : "";
+            let tmplKey = "midterm";
+            if (tmplName === "模考" || tmplName === "mock_normal") tmplKey = "mock_normal";
+            else if (tmplName === "仿會考" || tmplName === "mock_cap") tmplKey = "mock_cap";
+            else if (tmplName === "段考" || tmplName === "midterm") tmplKey = "midterm";
+            else if (tmplName !== "") tmplKey = tmplName; // 自動學習新模板
+
+            importedTmpls.add(tmplKey);
+            
+            let d = parseInt(r["天數"]);
+            if(!isNaN(d) && d > 0) {
+                if(!maxDays[tmplKey] || d > maxDays[tmplKey]) maxDays[tmplKey] = d;
+                if(!newTemplates[tmplKey]) newTemplates[tmplKey] = {};
+                if(!newTemplates[tmplKey][d]) newTemplates[tmplKey][d] = [];
+                
+                let examStr = r["列入正式考試"] ? String(r["列入正式考試"]).trim() : "";
+                newTemplates[tmplKey][d].push({
+                    start: normalizeTime(r["開始時間"]) || "08:00",
+                    end: normalizeTime(r["結束時間"]) || "09:00",
+                    subject: r["考試科目"] ? String(r["考試科目"]).trim() : "無",
+                    note: r["備註"] ? String(r["備註"]).trim() : "",
+                    isExam: (examStr === "是" || examStr === "true")
+                });
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            importedTmpls.forEach(key => { appData.scheduleTemplates[key] = newTemplates[key]; });
+            if (importedTmpls.size === 1) appData.activeTemplate = Array.from(importedTmpls)[0];
+            else appData.activeTemplate = importedTmpls.has("midterm") ? "midterm" : Array.from(importedTmpls)[0];
+            
+            updateTemplateDropdowns(); 
+            appData.schedules = JSON.parse(JSON.stringify(appData.scheduleTemplates[appData.activeTemplate]));
+            appData.totalDays = maxDays[appData.activeTemplate] || 1;
+
+            for (let d = 1; d <= appData.totalDays; d++) {
+                if (!appData.schedules[d]) appData.schedules[d] = [];
+                if (!appData.examDates[d]) appData.examDates[d] = "";
+            }
+
+            syncStateAndSave(true);
+            renderDateInputs(); renderDaySelect();
+            document.getElementById("setDaySelect").value = "1"; appData.displayDay = "1";
+            renderSettingsSchedule();
+
+            if (isPaste) closeSchedulePasteModal();
+            showMessageModal("考程表匯入成功！已匯入 " + count + " 筆並套用。");
+        } else {
+            showMessageModal("找不到有效的考程資料，請確認格式。", true);
+        }
+    }
+
+    // ====== 功能說明視窗邏輯 ======
+    function openInstructionModal() { document.getElementById("instructionModal").style.display = "flex"; }
+    function closeInstructionModal() { document.getElementById("instructionModal").style.display = "none"; }
+
+    // ====== 名單動作與覆蓋確認邏輯 ======
+    var pendingAction = null, pendingData = null;
+
+    function confirmListAction(action, data) {
+        var container = document.getElementById("studentsTableBody");
+        var hasData = container.querySelectorAll(".student-row").length > 0 || Object.keys(appData.students).length > 0;
+        if (hasData) {
+            pendingAction = action; pendingData = data;
+            document.getElementById("overwriteModalTitle").innerText = "⚠️ 確認覆蓋名單";
+            document.getElementById("overwriteMsg").innerText = "目前已有學生資料，執行此動作將會【全部覆蓋】原有資料，確定嗎？";
+            if (action === 'paste') document.getElementById("pasteModal").style.display = "none";
+            document.getElementById("overwriteConfirmModal").style.display = "flex";
+        } else executeListAction(action, data);
+    }
+
+    function closeOverwriteConfirm() {
+        document.getElementById("overwriteConfirmModal").style.display = "none";
+        if (pendingAction === 'paste') document.getElementById("pasteModal").style.display = "flex";
+        pendingAction = null; pendingData = null;
+    }
+
+    function confirmOverwrite() {
+        document.getElementById("overwriteConfirmModal").style.display = "none";
+        executeListAction(pendingAction, pendingData);
+    }
+
+    function executeListAction(action, data) {
+        if (action === 'import') executeImport(data);
+        else if (action === 'paste') executePaste(data);
+    }
+
+    // ====== 系統自訂預設值與回復 ======
+    function syncAllInputsToAppData() {
+        appData.schoolName = document.getElementById("setSchoolName").value.trim() || "鳳甲國中";
+        appData.academicYear = document.getElementById("setAcademicYear").value;
+        appData.semester = document.getElementById("setSemester").value;
+        var examSelectVal = document.getElementById("setExam").value;
+        if (examSelectVal === "custom") {
+            appData.examType = document.getElementById("setCustomExamName").value.trim() || "自訂考試";
+            appData.examOption = "custom";
+        } else { appData.examType = examSelectVal; appData.examOption = examSelectVal; }
+        appData.mainTitle = appData.schoolName + " " + appData.academicYear + appData.semester + appData.examType;
+        
+        for (var i = 1; i <= appData.totalDays; i++) {
+            var dateEl = document.getElementById("setDateDay" + i);
+            if (dateEl) appData.examDates[i] = dateEl.value;
+        }
+        appData.absentList = getListFromBox("box-absent"); appData.pulloutList = getListFromBox("box-pullout");
+        appData.expectedCount = appData.totalSeats - appData.invalidList.length;
+        appData.absentCount = appData.absentList.length;
+        appData.pulloutCount = appData.pulloutList.length;
+        appData.actualCount = appData.expectedCount - appData.absentCount - appData.pulloutCount;
+        appData.teacherTips = document.getElementById("setTips").value;
+        appData.displayDay = document.getElementById("setDaySelect").value;
+        autoSaveList(); saveSettingsScheduleToMemory(appData.displayDay);
+    }
+
+    function setCustomDefault() {
+        syncAllInputsToAppData();
+        localStorage.setItem("fengjia_custom_default", JSON.stringify(appData));
+        showMessageModal("✅ 已將目前所有設定儲存為「自訂預設值」！\n未來按下「回復原始值」時將自動回到此狀態。");
+    }
+
+    function requestFactoryReset() {
+        var hasCustom = !!localStorage.getItem("fengjia_custom_default");
+        var bodyNormal = document.getElementById("resetModalMsgNormal"), bodyCustom = document.getElementById("resetModalMsgCustom"), footer = document.getElementById("resetModalFooter");
+        if (hasCustom) {
+            bodyNormal.style.display = "none"; bodyCustom.style.display = "block";
+            footer.innerHTML = `<button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color);" onclick="closeFactoryResetConfirm()">取消</button><button class="btn-save" style="background: var(--primary); box-shadow: 0 4px 10px rgba(212, 106, 84, 0.3);" onclick="executeFactoryReset('custom')">📂 回到自訂</button><button class="btn-save" style="background: var(--danger); box-shadow: 0 4px 10px rgba(226, 88, 88, 0.3);" onclick="executeFactoryReset('factory')">⚠️ 強制出廠</button>`;
+        } else {
+            bodyNormal.style.display = "block"; bodyCustom.style.display = "none";
+            footer.innerHTML = `<button class="btn-close" style="color: var(--text-main); border-color: var(--border-color); background: var(--bg-color);" onclick="closeFactoryResetConfirm()">取消</button><button class="btn-save" style="background: var(--danger); box-shadow: 0 4px 10px rgba(226, 88, 88, 0.3);" onclick="executeFactoryReset('factory')">確定回復出廠</button>`;
+        }
+        document.getElementById("factoryResetConfirmModal").style.display = "flex";
+    }
+
+    function closeFactoryResetConfirm() { document.getElementById("factoryResetConfirmModal").style.display = "none"; }
+
+    function executeFactoryReset(mode) {
+        localStorage.removeItem("fengjia_bigscreen_data"); 
+        if (mode === 'factory') {
+            localStorage.removeItem("fengjia_custom_default"); 
+            appData = JSON.parse(JSON.stringify(defaultAppData));
+        } else {
+            var customDefault = localStorage.getItem("fengjia_custom_default");
+            appData = JSON.parse(JSON.stringify(defaultAppData));
+            if (customDefault) {
+                try {
+                    var parsed = JSON.parse(customDefault);
+                    for (var key in parsed) if (parsed.hasOwnProperty(key)) appData[key] = parsed[key];
+                } catch(e) { appData = JSON.parse(JSON.stringify(defaultAppData)); }
+            }
+        }
+
+        appDataBackup = JSON.stringify(appData); isDirty = false;
+        
+        document.getElementById("setSchoolName").value = appData.schoolName;
+        document.getElementById("setAcademicYear").value = appData.academicYear;
+        document.getElementById("setSemester").value = appData.semester;
+        document.getElementById("setExam").value = appData.examOption;
+        document.getElementById("setCustomExamName").value = appData.examOption === 'custom' ? appData.examType : "";
+        document.getElementById("quickSeatCount").value = appData.totalSeats;
+        document.getElementById("setTips").value = appData.teacherTips;
+        
+        updateTemplateDropdowns(); updateToggleButtonUI();
+        renderDateInputs(); renderDaySelect();
+        
+        if (document.getElementById("setDaySelect").querySelector('option[value="' + appData.displayDay + '"]')) document.getElementById("setDaySelect").value = appData.displayDay;
+        else { document.getElementById("setDaySelect").value = "1"; appData.displayDay = "1"; }
+        
+        toggleCustomExam(); renderSettingsSchedule(); renderStudentsTab();      
+        generateStudentChips(); updateStats(); applyTheme(); renderMainDisplay();
+        
+        closeFactoryResetConfirm(); switchTab('tab-general'); saveDataToStorage();
+        showMessageModal(mode === 'factory' ? "系統已強制還原至最初出廠設定！" : "系統已切換至您的自訂預設狀態！");
+    }
+
+    function requestGenerateSeats() {
+        var count = parseInt(document.getElementById("quickSeatCount").value) || 30;
+        var newStudents = {};
+        for (var i = 1; i <= count; i++) newStudents[i] = appData.students[i] || "";
+        appData.students = newStudents; appData.absentList = []; appData.pulloutList = [];
+        syncStateAndSave(true);
     }
 
     function syncStateAndSave(reRenderList) {
-        var maxSeat = 0;
-        for(var key in appData.students) { var v = parseInt(key); if(v > maxSeat) maxSeat = v; }
-        appData.totalSeats = maxSeat;
-        appData.invalidList = [];
-        for (var i = 1; i <= maxSeat; i++) { if (!(i in appData.students)) appData.invalidList.push(i); }
+        var maxSeat = 0; var hasAnyName = false;
+        for(var key in appData.students) {
+            var v = parseInt(key);
+            if(v > maxSeat) maxSeat = v;
+            if(appData.students[key].trim() !== "") hasAnyName = true;
+        }
+        appData.totalSeats = maxSeat; appData.invalidList = [];
+        for (var i = 1; i <= maxSeat; i++) {
+            if (!(i in appData.students)) appData.invalidList.push(i);
+            else if (hasAnyName && appData.students[i].trim() === "") appData.invalidList.push(i);
+        }
         appData.absentList = appData.absentList.filter(n => appData.invalidList.indexOf(n) === -1);
         appData.pulloutList = appData.pulloutList.filter(n => appData.invalidList.indexOf(n) === -1);
+        
         if (reRenderList) renderStudentsTab();
-        generateStudentChips(); updateStats();
+        generateStudentChips(); updateStats(); isDirty = true; saveDataToStorage();
+        if (document.getElementById("settingsModal").style.display === "flex") appDataBackup = JSON.stringify(appData); 
     }
 
     function renderStudentsTab() {
@@ -1197,6 +2074,9 @@
         var colCount = Math.ceil(seats.length / 10) || 1;
         for(var c = 0; c < colCount; c++) {
             var colDiv = document.createElement("div"); colDiv.className = "student-column";
+            var header = document.createElement("div"); header.className = "sgh-col";
+            header.innerHTML = "<div style='width:60px; text-align:center;'>座號</div><div style='flex:1; text-align:left;'>姓名 <small style='color:var(--text-muted); font-weight:normal; font-size:0.8rem;'>(不填則顯示為純數字)</small></div><div style='width:30px'></div>";
+            colDiv.appendChild(header);
             for(var i = 0; i < 10; i++) {
                 var idx = c * 10 + i;
                 if(idx < seats.length) {
@@ -1211,7 +2091,9 @@
     }
 
     function autoSaveList() {
-        var rows = document.querySelectorAll(".student-row");
+        var container = document.getElementById("studentsTableBody");
+        if (!container || container.innerHTML.trim() === "") return; // 防呆
+        var rows = container.querySelectorAll(".student-row");
         var newStudents = {};
         rows.forEach(row => {
             var seat = parseInt(row.querySelector(".stud-input-seat").value);
@@ -1219,6 +2101,7 @@
             if (!isNaN(seat) && seat > 0) newStudents[seat] = name;
         });
         appData.students = newStudents;
+        syncStateAndSave(false);
     }
     
     function applyStudentListChanges() { autoSaveList(); syncStateAndSave(true); }
@@ -1233,13 +2116,23 @@
             if (appData.invalidList.indexOf(i) !== -1) continue; 
             var chip = document.createElement("div"); chip.className = "student-chip"; chip.draggable = true; chip.id = "student-" + i; chip.dataset.number = i;
             var nameText = (appData.showName && appData.students[i]) ? " " + appData.students[i] : "";
-            chip.innerHTML = padZero(i) + nameText;
+            chip.innerHTML = padZero(i) + nameText + " <span class='chip-close' title='刪除此座號'>×</span>";
             chip.onclick = (function(num) { return function(e) { 
+                if (e.target.classList.contains('chip-close')) return;
                 var aIdx = appData.absentList.indexOf(num), pIdx = appData.pulloutList.indexOf(num);
                 if (aIdx !== -1) { appData.absentList.splice(aIdx, 1); appData.pulloutList.push(num); }
                 else if (pIdx !== -1) { appData.pulloutList.splice(pIdx, 1); }
                 else { appData.absentList.push(num); }
-                generateStudentChips();
+                generateStudentChips(); saveDataToStorage(); appDataBackup = JSON.stringify(appData);
+            }})(i);
+            chip.querySelector('.chip-close').onclick = (function(num) { return function(e) {
+                e.stopPropagation();
+                delete appData.students[num];
+                if (appData.invalidList.indexOf(num) === -1) appData.invalidList.push(num);
+                var aIdx = appData.absentList.indexOf(num), pIdx = appData.pulloutList.indexOf(num);
+                if (aIdx !== -1) appData.absentList.splice(aIdx, 1);
+                if (pIdx !== -1) appData.pulloutList.splice(pIdx, 1);
+                renderStudentsTab(); updateStats(); saveDataToStorage(); appDataBackup = JSON.stringify(appData);
             }})(i);
             chip.addEventListener('dragstart', function(e) { e.dataTransfer.setData("text/plain", e.target.id); e.target.classList.add("dragging"); });
             chip.addEventListener('dragend', function(e) { e.target.classList.remove("dragging"); updateStats(); });
@@ -1250,20 +2143,20 @@
         updateStats(); 
     }
 
-    function dragEnter(e) { e.preventDefault(); }
+    function dragEnter(e) { e.preventDefault(); var target = e.target; while(target && !target.classList.contains('drag-box')) target = target.parentElement; if(target) target.classList.add("drag-over");}
     function allowDrop(e) { e.preventDefault(); }
-    function dragLeave(e) { e.preventDefault(); }
+    function dragLeave(e) { e.preventDefault(); var target = e.target; while(target && !target.classList.contains('drag-box')) target = target.parentElement; if(target) target.classList.remove("drag-over");}
     function drop(e) {
         e.preventDefault(); var data = e.dataTransfer.getData("text/plain"); var chip = document.getElementById(data);
         var target = e.target; while(target && !target.classList.contains('drag-box')) target = target.parentElement;
         if (target && chip) {
-            target.appendChild(chip);
+            target.classList.remove("drag-over"); target.appendChild(chip);
             var num = parseInt(chip.dataset.number);
             appData.absentList = appData.absentList.filter(n => n !== num);
             appData.pulloutList = appData.pulloutList.filter(n => n !== num);
             if (target.id === "box-absent") appData.absentList.push(num);
             else if (target.id === "box-pullout") appData.pulloutList.push(num);
-            updateStats();
+            updateStats(); saveDataToStorage(); appDataBackup = JSON.stringify(appData);
         }
     }
 
@@ -1279,23 +2172,14 @@
         document.getElementById("statActual").innerText = actual;
     }
 
+    function saveDataToStorage() {
+        try { localStorage.setItem("fengjia_bigscreen_data", JSON.stringify(appData)); } 
+        catch (e) { console.warn("無法儲存設定：", e); }
+    }
+
     function saveSettings() {
-        appData.schoolName = document.getElementById("setSchoolName").value.trim() || "鳳甲國中";
-        appData.academicYear = document.getElementById("setAcademicYear").value;
-        appData.semester = document.getElementById("setSemester").value;
-        appData.examOption = document.getElementById("setExam").value;
-        appData.examType = appData.examOption === "custom" ? document.getElementById("setCustomExamName").value.trim() : appData.examOption;
-        appData.mainTitle = appData.schoolName + " " + appData.academicYear + appData.semester + appData.examType;
-        
-        for (var i = 1; i <= appData.totalDays; i++) {
-            var dateEl = document.getElementById("setDateDay" + i);
-            if (dateEl) appData.examDates[i] = dateEl.value;
-        }
-        appData.absentList = getListFromBox("box-absent"); appData.pulloutList = getListFromBox("box-pullout");
-        appData.teacherTips = document.getElementById("setTips").value;
-        appData.displayDay = document.getElementById("setDaySelect").value;
-        autoSaveList(); saveSettingsScheduleToMemory(appData.displayDay);
-        
+        syncAllInputsToAppData();
+        saveDataToStorage();
         renderMainDisplay();
         var msg = document.getElementById("saveStatusMsg"); msg.innerText = "✨ 設定已儲存"; msg.style.opacity = 1;
         switchTab('tab-general');
@@ -1344,12 +2228,8 @@
             const saved = localStorage.getItem('fengjia_login_session');
             if (saved) {
                 const data = JSON.parse(saved);
-                // 8 小時 = 8 * 60 * 60 * 1000 = 28800000 毫秒
-                if (Date.now() - data.timestamp < 28800000) {
-                    return data;
-                } else {
-                    localStorage.removeItem('fengjia_login_session');
-                }
+                if (Date.now() - data.timestamp < 28800000) return data;
+                else localStorage.removeItem('fengjia_login_session');
             }
         } catch(e) { console.error("Local session check failed", e); }
         return null;
@@ -1365,6 +2245,101 @@
     window.dbActions.logoutSystem = function() {
         localStorage.removeItem('fengjia_login_session');
         window.location.reload();
+    };
+
+    // --- Excel 匯出功能 (全校名單) ---
+    window.dbActions.exportFormattedExcel = function() {
+        const text = document.getElementById('globalStudentInput').value.trim();
+        if(!text) { showMessageModal("請先在上方貼上學生名單資料！", true); return; }
+
+        const lines = text.split('\n');
+        let data = [["班級", "座號", "姓名"]];
+        
+        lines.forEach(line => {
+            const parts = line.split('\t').map(p => p.trim());
+            if(parts.length >= 3) {
+                data.push([parts[0], parseInt(parts[1]), parts[2]]);
+            }
+        });
+
+        if (data.length <= 1) { showMessageModal("無法辨識資料，請確保複製了包含「班級、座號、姓名」的三個欄位。", true); return; }
+
+        var ws = XLSX.utils.aoa_to_sheet(data);
+
+        const style = {
+            font: { name: "微軟正黑體", sz: 12 },
+            alignment: { horizontal: "center", vertical: "center", wrapText: true },
+            border: {
+                top: { style: "thin", color: { rgb: "000000" } },
+                bottom: { style: "thin", color: { rgb: "000000" } },
+                left: { style: "thin", color: { rgb: "000000" } },
+                right: { style: "thin", color: { rgb: "000000" } }
+            }
+        };
+
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = range.s.r; R <= range.e.r; ++R) {
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellRef = XLSX.utils.encode_cell({c: C, r: R});
+                if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+                ws[cellRef].s = style;
+            }
+        }
+
+        ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 20 }];
+
+        var wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "學生");
+        XLSX.writeFile(wb, "最新全校學生名單.xlsx");
+    };
+
+    // --- 發佈全校名單至雲端 ---
+    window.dbActions.uploadGlobalStudents = async function() {
+        if(!appData.isAdmin) return;
+        const text = document.getElementById('globalStudentInput').value.trim();
+        if(!text) { showMessageModal("請先貼上資料！", true); return; }
+
+        const lines = text.split('\n');
+        let studentsData = {};
+        
+        lines.forEach(line => {
+            const parts = line.split('\t').map(p => p.trim());
+            if(parts.length >= 3) {
+                const cName = parts[0];
+                const seat = parseInt(parts[1]);
+                const sName = parts[2];
+                if(!isNaN(seat)) {
+                    if(!studentsData[cName]) studentsData[cName] = {};
+                    studentsData[cName][seat] = sName;
+                }
+            }
+        });
+
+        try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_students', 'current');
+            await setDoc(docRef, {
+                students: studentsData,
+                updatedAt: Date.now(),
+                updatedBy: appData.userEmail
+            });
+            showMessageModal("☁️ 全校學生名單已發佈至雲端！\n各班登入時將優先載入此最新名單。");
+            document.getElementById('globalStudentInput').value = "";
+        } catch(e) {
+            console.error(e);
+            showMessageModal("發佈失敗：" + e.message, true);
+        }
+    };
+
+    // --- 強制呼叫 GAS 將 Firebase 寫回 Google 試算表 ---
+    window.dbActions.forceSync = async function() {
+        if(!appData.isAdmin) return;
+        showMessageModal("⏳ 正在觸發 Google 試算表同步備份，這需要一點時間，請稍候...");
+        const res = await fetchFromGAS('forceSync');
+        if(res) {
+            showMessageModal("✅ 雲端資料已成功備份至您的 Google 試算表！");
+        } else {
+            showMessageModal("❌ 備份觸發失敗，請檢查網路或 GAS 部署狀態。", true);
+        }
     };
 
     onAuthStateChanged(auth, user => {
@@ -1442,7 +2417,7 @@
                     updateLoginClasses();
                     document.getElementById('loginClass').value = localSession.classNum;
                     document.getElementById('mainLoginCard').style.display = 'none';
-                    window.dbActions.enterSystem(); 
+                    window.dbActions.enterSystem(true); // true 代表從 resume 進入，保留本地編輯
                 } else {
                     document.getElementById('mainLoginCard').style.display = 'none';
                     document.getElementById('classSelectSection').style.display = 'block';
@@ -1464,9 +2439,8 @@
                         const email = docSnap.data().email;
                         appData.userEmail = email;
                         
-                        // 從白名單檢查是否為管理員
-                        const whitelistCSV = await fetchGoogleSheetCSV(CSV_URL_WHITELIST);
-                        const adminEmails = whitelistCSV.map(row => row[0].toLowerCase().trim());
+                        // 透過安全的 GAS API 取得白名單判斷管理員
+                        const adminEmails = await fetchFromGAS('getWhitelist') || [];
                         if(adminEmails.includes(email.toLowerCase())) {
                             appData.isAdmin = true;
                             document.getElementById('btn-tab-advanced').style.display = 'inline-block';
@@ -1487,6 +2461,7 @@
                 });
             }
         }).catch(e => {
+            console.error("Anonymous login failed", e);
             const qrLoading = document.getElementById('qrLoading');
             if (e.code === 'auth/admin-restricted-operation') {
                 qrLoading.innerHTML = "<span style='font-size:1.1rem;'>⚠️ <b>必須啟用匿名登入</b></span><br><br>請至 Firebase 後台：<br>1. 點擊 <b>Authentication</b><br>2. 進入 <b>Sign-in method</b><br>3. 啟用 <b>匿名 (Anonymous)</b><br><br>完成後請重新整理網頁。";
@@ -1501,7 +2476,7 @@
         });
     }
 
-    // 1. Google 登入 (直接登入)
+    // 1. Google 登入 (保留直接登入給行政)
     window.dbActions.loginWithGoogle = async function() {
         try {
             const provider = new GoogleAuthProvider();
@@ -1511,9 +2486,8 @@
             if(email.endsWith('@fjm.kh.edu.tw')) {
                 appData.userEmail = email;
                 
-                // 從白名單檢查是否為管理員
-                const whitelistCSV = await fetchGoogleSheetCSV(CSV_URL_WHITELIST);
-                const adminEmails = whitelistCSV.map(row => row[0].toLowerCase().trim());
+                // 從 GAS API 取得白名單檢查是否為管理員
+                const adminEmails = await fetchFromGAS('getWhitelist') || [];
                 if(adminEmails.includes(email.toLowerCase())) {
                     appData.isAdmin = true;
                     document.getElementById('btn-tab-advanced').style.display = 'inline-block';
@@ -1524,7 +2498,6 @@
                     document.getElementById('advUserEmail').innerText = email;
                 }
 
-                // 儲存登入狀態 (8小時有效)
                 saveLocalSession(appData.userEmail, appData.isAdmin);
 
                 document.getElementById('userEmailDisplay').innerText = "✅ 授權成功：" + email;
@@ -1538,7 +2511,7 @@
             console.error("登入失敗", error);
             if(error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cross-origin-isolated') {
                 appData.userEmail = "guest@fjm.kh.edu.tw";
-                appData.isAdmin = true; // 預覽環境給予測試權限
+                appData.isAdmin = true; 
                 document.getElementById('btn-tab-advanced').style.display = 'inline-block';
                 document.getElementById('userEmailDisplay').innerText = "⚠️ 使用訪客登入 (預覽環境)";
                 document.getElementById('mainLoginCard').style.display = 'none';
@@ -1550,55 +2523,79 @@
     };
 
     // 2. 選擇班級並進入系統
-    window.dbActions.enterSystem = async function() {
+    window.dbActions.enterSystem = async function(isResume = false) {
         const grade = document.getElementById('loginGrade').value;
         const classVal = document.getElementById('loginClass').value;
         const className = (grade === "特殊") ? classVal : (grade + classVal);
         
-        appData.grade = grade; 
-        appData.classNum = classVal; 
-        appData.className = className;
-
-        // 儲存/更新本地記憶 (加入班級資訊)
+        // 儲存/更新本地記憶
         saveLocalSession(appData.userEmail, appData.isAdmin, grade, classVal);
 
-        // 載入 Google Sheets 學生名單
-        const studentsCSV = await fetchGoogleSheetCSV(CSV_URL_STUDENTS);
-        let foundStudents = {};
-        studentsCSV.forEach(row => {
-            if(row.length >= 3 && row[0] === className) {
-                const seat = parseInt(row[1]);
-                if(!isNaN(seat)) foundStudents[seat] = row[2];
-            }
-        });
+        // --- 若是第一次登入 (非恢復模式)，則執行雲端抓取與覆蓋 ---
+        if (!isResume) {
+            appData.grade = grade; 
+            appData.classNum = classVal; 
+            appData.className = className;
+            
+            let foundStudents = {};
+            try {
+                // 優先嘗試從 Firebase 抓取全校名單
+                const globalStudentsRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_students', 'current');
+                const studentSnap = await getDoc(globalStudentsRef);
+                if(studentSnap.exists() && studentSnap.data().students && studentSnap.data().students[className]) {
+                    foundStudents = studentSnap.data().students[className];
+                } else {
+                    // 退回抓取 GAS 安全 API
+                    const sheetStudents = await fetchFromGAS('getStudents', `&class=${className}`);
+                    if (sheetStudents && sheetStudents[className]) {
+                        foundStudents = sheetStudents[className];
+                    }
+                }
+            } catch(e) { console.error("Student load error", e); }
 
-        if(Object.keys(foundStudents).length > 0) appData.students = foundStudents;
-        else for(let i=1; i<=30; i++) appData.students[i] = "";
-        
-        // 進入系統前，抓取雲端最新設定
-        try {
-            const globalRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_settings', 'current');
-            const docSnap = await getDoc(globalRef);
-            if(docSnap.exists()) {
-                const data = docSnap.data();
-                appData.academicYear = data.academicYear;
-                appData.semester = data.semester;
-                appData.examType = data.examType;
-                appData.examOption = data.examOption;
-                appData.schedules = data.schedules;
-                appData.totalDays = data.totalDays;
-                appData.lastSyncAt = data.updatedAt;
-                appData.mainTitle = appData.schoolName + " " + appData.academicYear + appData.semester + appData.examType;
-            }
-        } catch(e) { console.error("Global settings load error", e); }
+            if(Object.keys(foundStudents).length > 0) appData.students = foundStudents;
+            else for(let i=1; i<=30; i++) appData.students[i] = "";
 
-        syncStateAndSave(false);
+            // 載入考程模板
+            try {
+                const tmpls = await fetchFromGAS('getSchedules');
+                if(tmpls && Object.keys(tmpls).length > 0) {
+                    appData.scheduleTemplates = tmpls;
+                    if(!appData.scheduleTemplates[appData.activeTemplate]) {
+                        appData.activeTemplate = Object.keys(tmpls)[0];
+                    }
+                }
+            } catch(e) { console.error("Schedule templates load error", e); }
+            
+            // 進入系統前，抓取雲端最新設定
+            try {
+                const globalRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_settings', 'current');
+                const docSnap = await getDoc(globalRef);
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    appData.academicYear = data.academicYear;
+                    appData.semester = data.semester;
+                    appData.examType = data.examType;
+                    appData.examOption = data.examOption;
+                    appData.schedules = data.schedules;
+                    appData.totalDays = data.totalDays;
+                    appData.lastSyncAt = data.updatedAt;
+                    appData.mainTitle = appData.schoolName + " " + appData.academicYear + appData.semester + appData.examType;
+                }
+            } catch(e) { console.error("Global settings load error", e); }
+
+            syncStateAndSave(false);
+        } else {
+            // 是從 Resume (重整網頁) 進入，我們只需更新選單就好
+            updateTemplateDropdowns();
+        }
+
         renderMainDisplay();
         document.getElementById('loginOverlay').style.display = "none";
         
         startHeartbeat();
         listenForBroadcasts();
-        listenForGlobalSettings();
+        listenForGlobalSettings(); // 啟動雲端新版本監聽
     };
 
     // --- 在線心跳機制 ---
@@ -1658,6 +2655,7 @@
         document.getElementById('syncDot').style.display = 'none';
         document.getElementById('syncConfirmModal').style.display = 'none';
         
+        syncStateAndSave(false);
         renderMainDisplay();
         if(document.getElementById('settingsModal').style.display === 'flex') {
             openSettings(); 
@@ -1679,6 +2677,8 @@
                 updatedAt: Date.now(),
                 updatedBy: appData.userEmail
             });
+            appData.lastSyncAt = Date.now();
+            saveDataToStorage();
             showMessageModal("📤 已成功發佈最新全校公版設定！各班將會收到同步通知。");
         } catch(e) { console.error(e); showMessageModal("發佈失敗：" + e.message, true); }
     };
@@ -1711,6 +2711,7 @@
         document.getElementById('broadcastDisplaySection').style.display = 'flex';
         document.getElementById('broadcastDisplayText').innerText = document.getElementById('broadcastReceiveText').innerText;
         
+        saveDataToStorage();
         updateOnlineStatus(); 
     };
 
