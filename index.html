@@ -2364,6 +2364,9 @@
         window.dbActions.processPhoneLogin = async function() {
             try {
                 const provider = new GoogleAuthProvider();
+                // 加上這行：強制跳出 Google 選擇帳號的畫面，避免自動套用預設帳號
+                provider.setCustomParameters({ prompt: 'select_account' });
+                
                 const result = await signInWithPopup(auth, provider);
                 const email = result.user.email;
                 
@@ -2480,6 +2483,9 @@
     window.dbActions.loginWithGoogle = async function() {
         try {
             const provider = new GoogleAuthProvider();
+            // 加上這行：強制跳出 Google 選擇帳號的畫面，避免自動套用預設帳號
+            provider.setCustomParameters({ prompt: 'select_account' });
+            
             const result = await signInWithPopup(auth, provider);
             const email = result.user.email;
             
