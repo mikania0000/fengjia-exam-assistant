@@ -73,6 +73,7 @@
             background: var(--card-bg); width: 90%; max-width: 450px;
             border-radius: 24px; padding: 40px 30px; text-align: center;
             box-shadow: 0 15px 35px rgba(156, 138, 123, 0.15); border: 1px solid var(--border-color);
+            position: relative;
         }
         .login-card h1 { color: var(--primary); font-size: 2rem; margin-bottom: 10px; }
         .login-card p { color: var(--text-muted); font-size: 1.1rem; margin-bottom: 30px; }
@@ -376,10 +377,9 @@
         .cloud-btn:hover { transform: translateY(-2px); }
 
         /* 廣播監控面板 */
-        .monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-top: 15px; max-height: 250px; overflow-y: auto; padding: 5px;}
+        .monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 15px; max-height: 250px; overflow-y: auto; padding: 5px;}
         .monitor-class-box { background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         [data-theme="dark"] .monitor-class-box { background: var(--bg-color); border-color: #44403c;}
-        .monitor-class-box h4 { margin: 0 0 5px 0; color: var(--primary); font-size: 1rem;}
         .status-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; }
         .dot-green { background-color: #10b981; box-shadow: 0 0 5px #10b981; }
         .dot-red { background-color: #ef4444; }
@@ -419,18 +419,11 @@
         <!-- 選班級畫面 -->
         <div class="login-card" id="classSelectSection" style="display:none;">
             <div class="class-select-area" style="display:block;">
-                <p style="color: var(--success); font-weight: bold; margin-bottom: 10px; text-align: center;" id="userEmailDisplay">登入成功！</p>
-                <label>選擇年級</label>
-                <select id="loginGrade" onchange="updateLoginClasses()">
-                    <option value="7">七年級</option>
-                    <option value="8">八年級</option>
-                    <option value="9">九年級</option>
-                    <option value="特殊">特殊班</option>
-                </select>
+                <p style="color: var(--success); font-weight: bold; margin-bottom: 15px; text-align: center;" id="userEmailDisplay">登入成功！</p>
                 
-                <label>選擇班級</label>
+                <label>選擇班級 (自動載入中...)</label>
                 <select id="loginClass">
-                    <!-- JS Generated -->
+                    <option value="" disabled selected>載入中...</option>
                 </select>
 
                 <button class="btn-enter" onclick="window.dbActions.enterSystem()">進入系統</button>
@@ -757,6 +750,16 @@
                 <div id="tab-advanced" class="tab-pane">
                     <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 10px;">您目前的 Google 帳號授權： <strong id="advUserEmail">未登入</strong></p>
                     
+                    <div class="cloud-sync-card">
+                        <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程與班級同步 (行政專用)</h3>
+                        <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前設定好的「學期、考試項目、考程表」，一鍵發佈給全校各班下載更新。也能將試算表中的「班級清單」同步至雲端。</p>
+                        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
+                            <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前考程設定為最新公版</button>
+                            <button class="cloud-btn" style="background: #8b5cf6; color: white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);" onclick="window.dbActions.syncClassesToFirebase()">🔄 從試算表同步班級名單至雲端</button>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--danger);">* 發佈考程後，所有登入的班級會看到「雲端同步」提示燈號。<br>* 同步班級名單後，登入畫面選單與此處的監控面板會立即更新。</p>
+                    </div>
+
                     <!-- 全校學生名單管理 -->
                     <div class="cloud-sync-card" style="border-color: var(--success); background: var(--success-light);">
                         <h3 style="color: var(--success); margin: 0 0 10px 0; border-bottom: 2px dashed #a5d6b4; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🧑‍🎓 全校學生名單同步 (行政專用)</h3>
@@ -768,16 +771,6 @@
                         </div>
                         <button class="cloud-btn" style="background: #4a72a8; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.forceSync()">🔄 強制將 Firebase 資料備份至 Google 試算表</button>
                         <p style="margin-top: 10px; font-size: 0.9rem; color: var(--success); text-align: left;">* 網頁前端無法直接寫入 Google 試算表。在此發佈至雲端後，全校各班會立刻抓取最新名單。<br>* 若需要備份至 Google 試算表，請點擊「強制備份至 Google 試算表」按鈕，系統將自動寫入試算表。</p>
-                    </div>
-
-                    <!-- 全校雲端考程同步 -->
-                    <div class="cloud-sync-card">
-                        <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程設定同步 (行政專用)</h3>
-                        <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前設定好的「學期、考試項目、考程表」，一鍵發佈給全校各班下載更新。</p>
-                        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
-                            <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前設定為最新全校公版</button>
-                        </div>
-                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--danger);">* 發佈後，所有登入的班級會看到「雲端同步」提示燈號，點擊即可無縫套用最新設定。</p>
                     </div>
 
                     <!-- 錯題廣播發送與監控區 -->
@@ -991,6 +984,58 @@
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyEi7vDIjiBg9FHdjWFtq962NgANOQ2Z65e19FcFC7lyf598mwEdQsMnDuKYdhL1PSQ/exec";
     const GAS_TOKEN = "fengjia_secure_2026"; // 必須與 GAS 的設定匹配
 
+    // 在全域定義
+    window.globalClassList = []; 
+
+    window.buildClassDropdown = function() {
+        const classSel = document.getElementById('loginClass');
+        classSel.innerHTML = "";
+        let currentGrade = "";
+        let optgroup = null;
+
+        if (window.globalClassList.length === 0) {
+            classSel.innerHTML = '<option value="" disabled>無法取得班級名單</option>';
+            return;
+        }
+
+        window.globalClassList.forEach(cls => {
+            const name = String(cls.id);
+            let grade = "其他 / 特殊班";
+            if (/^[789]\d{2}$/.test(name)) {
+                grade = name.charAt(0) + "年級";
+            }
+
+            if (grade !== currentGrade) {
+                if (optgroup) classSel.appendChild(optgroup);
+                optgroup = document.createElement('optgroup');
+                optgroup.label = grade;
+                currentGrade = grade;
+            }
+
+            const opt = document.createElement('option');
+            opt.value = name;
+            // 只要顯示 班級 + 導師
+            let text = name + "班";
+            if (cls.teacher) text += ` - ${cls.teacher}`;
+            opt.innerText = text;
+            if (optgroup) optgroup.appendChild(opt);
+        });
+        if (optgroup) classSel.appendChild(optgroup);
+    };
+
+    window.fetchFromGAS = async function(action, params = "") {
+        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}`;
+        try {
+            const res = await fetch(url);
+            const json = await res.json();
+            if(json.error) throw new Error(json.error);
+            return json.data;
+        } catch(e) {
+            console.error("GAS Fetch Error:", e);
+            return null;
+        }
+    };
+
     var defaultScheduleTemplates = {
         "midterm": {
             "1": [
@@ -1038,23 +1083,6 @@
     var isDirty = false;
     var appDataBackup = "";
 
-    // 動態更新登入班級選單
-    function updateLoginClasses() {
-        const grade = document.getElementById('loginGrade').value;
-        const classSel = document.getElementById('loginClass');
-        classSel.innerHTML = "";
-        if (grade === "特殊") {
-            classSel.innerHTML = '<option value="資源班1">資源班1</option><option value="資源班2">資源班2</option>';
-        } else {
-            for(let i=1; i<=17; i++) {
-                let val = padZero(i);
-                classSel.innerHTML += `<option value="${val}">${val}班</option>`;
-            }
-            classSel.innerHTML += '<option value="資">資優班</option>';
-        }
-    }
-    document.addEventListener("DOMContentLoaded", updateLoginClasses);
-
     function padZero(num) {
         var n = parseInt(num, 10);
         return n < 10 ? '0' + n : n.toString();
@@ -1086,20 +1114,6 @@
 
     function closeMessageModal() {
         document.getElementById("messageModal").style.display = "none";
-    }
-
-    // 與 Google Apps Script API 溝通的共用函數
-    async function fetchFromGAS(action, params = "") {
-        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}`;
-        try {
-            const res = await fetch(url);
-            const json = await res.json();
-            if(json.error) throw new Error(json.error);
-            return json.data;
-        } catch(e) {
-            console.error("GAS Fetch Error:", e);
-            return null;
-        }
     }
 
     // --- UI Logic ---
@@ -2193,6 +2207,70 @@
     window.dbActions = {};
     window.pendingSyncData = null; 
     
+    // 初始化載入 Firebase 班級資料或退回 GAS
+    window.dbActions.loadClassList = async function() {
+        try {
+            let loaded = false;
+            // 1. Firebase 優先
+            try {
+                const globalClassesRef = doc(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'global_classes', 'current');
+                const classSnap = await getDoc(globalClassesRef);
+                if(classSnap.exists() && classSnap.data().classes && classSnap.data().classes.length > 0) {
+                    window.globalClassList = classSnap.data().classes;
+                    loaded = true;
+                }
+            } catch(e) { console.warn("Firebase 班級讀取失敗，將嘗試 GAS"); }
+
+            // 2. 退回 GAS 抓取試算表
+            if (!loaded) {
+                const gasClasses = await window.fetchFromGAS('getClasses');
+                if (gasClasses && gasClasses.length > 0) {
+                    window.globalClassList = gasClasses;
+                    loaded = true;
+                }
+            }
+
+            if (!loaded) throw new Error("無資料");
+            window.buildClassDropdown();
+            
+            // 如果管理員監控面板已開啟，重新整理
+            if (appData.isAdmin && window.dbActions.setupMonitor) {
+                window.dbActions.setupMonitor();
+            }
+
+        } catch(e) {
+            console.warn("班級清單載入失敗，改用預設清單:", e);
+            window.globalClassList = [];
+            ['7', '8', '9'].forEach(g => {
+                for(let i=1; i<=17; i++) window.globalClassList.push({id: g + padZero(i), teacher: "", location: ""});
+                window.globalClassList.push({id: g + '資', teacher: "", location: ""});
+            });
+            window.globalClassList.push({id: '資源班1', teacher: "", location: ""});
+            window.globalClassList.push({id: '資源班2', teacher: "", location: ""});
+            window.buildClassDropdown();
+        }
+    };
+
+    window.renderMonitorGrid = function() {
+        const grid = document.getElementById('monitorGrid');
+        grid.innerHTML = "";
+        
+        if (window.globalClassList && window.globalClassList.length > 0) {
+            window.globalClassList.forEach(cls => {
+                const cName = cls.id;
+                grid.innerHTML += `
+                    <div class="monitor-class-box" id="monitor-box-${cName}">
+                        <h4 style="margin: 0 0 2px 0; color: var(--primary); font-size: 1.1rem;">${cName}</h4>
+                        <div style="font-size: 0.85rem; font-weight: bold; color: var(--text-main); margin-bottom: 2px;">${cls.teacher || '未設定'}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; background: #f0f0f0; border-radius: 4px; padding: 2px;">📍 ${cls.location || '未設定'}</div>
+                        <div class="status-text"><span class="status-dot dot-gray" id="dot-online-${cName}"></span> 離線</div>
+                        <div class="status-text"><span class="status-dot dot-gray" id="dot-ack-${cName}"></span> 未收</div>
+                    </div>
+                `;
+            });
+        }
+    };
+
 </script>
 
 <!-- Firebase v11 Module (Strict Paths & Auth Required) -->
@@ -2216,6 +2294,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    // 暴露給全域以便 GAS fetch 使用
+    window.firebaseDb = db;
+    window.firebaseAppId = appId;
     
     let currentUser = null;
     let currentBroadcastId = "";
@@ -2246,6 +2328,35 @@
     window.dbActions.logoutSystem = function() {
         localStorage.removeItem('fengjia_login_session');
         window.location.reload();
+    };
+
+    // Firebase 載入完畢後，執行班級名單獲取
+    window.dbActions.loadClassList();
+
+    // --- 發佈全校班級名單至雲端 (行政專用) ---
+    window.dbActions.syncClassesToFirebase = async function() {
+        if(!appData.isAdmin) return;
+        showMessageModal("⏳ 正在從 Google 試算表抓取班級資料...");
+        const gasClasses = await window.fetchFromGAS('getClasses');
+        if (gasClasses && gasClasses.length > 0) {
+            try {
+                const globalClassesRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_classes', 'current');
+                await setDoc(globalClassesRef, {
+                    classes: gasClasses,
+                    updatedAt: Date.now(),
+                    updatedBy: appData.userEmail
+                });
+                window.globalClassList = gasClasses;
+                window.buildClassDropdown();
+                if (window.renderMonitorGrid) window.renderMonitorGrid();
+                showMessageModal("✅ 班級資料已成功同步至 Firebase！\n各班登入與監控面板已更新。");
+            } catch(e) {
+                console.error(e);
+                showMessageModal("同步至 Firebase 失敗：" + e.message, true);
+            }
+        } else {
+            showMessageModal("❌ 從試算表抓取班級失敗，請檢查資料或 GAS 設定。", true);
+        }
     };
 
     // --- Excel 匯出功能 (全校名單) ---
@@ -2335,7 +2446,7 @@
     window.dbActions.forceSync = async function() {
         if(!appData.isAdmin) return;
         showMessageModal("⏳ 正在觸發 Google 試算表同步備份，這需要一點時間，請稍候...");
-        const res = await fetchFromGAS('forceSync');
+        const res = await window.fetchFromGAS('forceSync');
         if(res) {
             showMessageModal("✅ 雲端資料已成功備份至您的 Google 試算表！");
         } else {
@@ -2365,8 +2476,11 @@
         window.dbActions.processPhoneLogin = async function() {
             try {
                 const provider = new GoogleAuthProvider();
-                // 加上這行：強制跳出 Google 選擇帳號的畫面，避免自動套用預設帳號
-                provider.setCustomParameters({ prompt: 'select_account' });
+                // 強制跳出 Google 選擇帳號畫面，並優先指定學校網域
+                provider.setCustomParameters({ 
+                    prompt: 'select_account',
+                    hd: 'fjm.kh.edu.tw' 
+                });
                 
                 const result = await signInWithPopup(auth, provider);
                 const email = result.user.email;
@@ -2385,7 +2499,7 @@
                     document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
                     await auth.signOut();
                 } else {
-                    document.getElementById('phoneLoginMsg').innerText = "❌ 授權失敗：必須使用 @fjm.kh.edu.tw 教職員帳號！";
+                    document.getElementById('phoneLoginMsg').innerText = "❌ 授權失敗：必須使用 @fjm.kh.edu.tw 網域帳號！";
                     document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
                     await auth.signOut();
                 }
@@ -2417,11 +2531,9 @@
 
                 // 若之前已選擇過班級，直接無縫進入系統
                 if (localSession.grade && localSession.classNum) {
-                    document.getElementById('loginGrade').value = localSession.grade;
-                    updateLoginClasses();
-                    document.getElementById('loginClass').value = localSession.classNum;
+                    let restoredClassName = localSession.grade === "特殊" ? localSession.classNum : (localSession.grade + localSession.classNum);
                     document.getElementById('mainLoginCard').style.display = 'none';
-                    window.dbActions.enterSystem(true); // true 代表從 resume 進入，保留本地編輯
+                    window.dbActions.enterSystem(true, restoredClassName); // true 代表從 resume 進入，保留本地編輯
                 } else {
                     document.getElementById('mainLoginCard').style.display = 'none';
                     document.getElementById('classSelectSection').style.display = 'block';
@@ -2444,7 +2556,7 @@
                         appData.userEmail = email;
                         
                         // 透過安全的 GAS API 取得白名單判斷管理員
-                        const adminEmails = await fetchFromGAS('getWhitelist') || [];
+                        const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
                         if(adminEmails.includes(email.toLowerCase())) {
                             appData.isAdmin = true;
                             document.getElementById('btn-tab-advanced').style.display = 'inline-block';
@@ -2484,8 +2596,11 @@
     window.dbActions.loginWithGoogle = async function() {
         try {
             const provider = new GoogleAuthProvider();
-            // 加上這行：強制跳出 Google 選擇帳號的畫面，避免自動套用預設帳號
-            provider.setCustomParameters({ prompt: 'select_account' });
+            // 強制跳出 Google 選擇帳號畫面，並優先指定學校網域
+            provider.setCustomParameters({ 
+                prompt: 'select_account',
+                hd: 'fjm.kh.edu.tw' 
+            });
             
             const result = await signInWithPopup(auth, provider);
             const email = result.user.email;
@@ -2494,7 +2609,7 @@
                 appData.userEmail = email;
                 
                 // 從 GAS API 取得白名單檢查是否為管理員
-                const adminEmails = await fetchFromGAS('getWhitelist') || [];
+                const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
                 if(adminEmails.includes(email.toLowerCase())) {
                     appData.isAdmin = true;
                     document.getElementById('btn-tab-advanced').style.display = 'inline-block';
@@ -2530,10 +2645,20 @@
     };
 
     // 2. 選擇班級並進入系統
-    window.dbActions.enterSystem = async function(isResume = false) {
-        const grade = document.getElementById('loginGrade').value;
-        const classVal = document.getElementById('loginClass').value;
-        const className = (grade === "特殊") ? classVal : (grade + classVal);
+    window.dbActions.enterSystem = async function(isResume = false, resumeClassName = null) {
+        
+        let className = resumeClassName;
+        if (!className) {
+            className = document.getElementById('loginClass').value;
+        }
+        if (!className) return;
+
+        let grade = "特殊";
+        let classVal = className;
+        if (/^[789]\d{2}$/.test(className)) {
+            grade = className.charAt(0);
+            classVal = className.substring(1);
+        }
         
         // 儲存/更新本地記憶
         saveLocalSession(appData.userEmail, appData.isAdmin, grade, classVal);
@@ -2553,7 +2678,7 @@
                     foundStudents = studentSnap.data().students[className];
                 } else {
                     // 退回抓取 GAS 安全 API
-                    const sheetStudents = await fetchFromGAS('getStudents', `&class=${className}`);
+                    const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
                     if (sheetStudents && sheetStudents[className]) {
                         foundStudents = sheetStudents[className];
                     }
@@ -2565,7 +2690,7 @@
 
             // 載入考程模板
             try {
-                const tmpls = await fetchFromGAS('getSchedules');
+                const tmpls = await window.fetchFromGAS('getSchedules');
                 if(tmpls && Object.keys(tmpls).length > 0) {
                     appData.scheduleTemplates = tmpls;
                     if(!appData.scheduleTemplates[appData.activeTemplate]) {
@@ -2594,7 +2719,7 @@
             syncStateAndSave(false);
         } else {
             // 是從 Resume (重整網頁) 進入，我們只需更新選單就好
-            updateTemplateDropdowns();
+            window.buildClassDropdown();
         }
 
         renderMainDisplay();
@@ -2757,7 +2882,7 @@
     // --- 監控面板 (行政端) ---
     let monitorUnsubscribe = null;
     window.dbActions.setupMonitor = function() {
-        renderMonitorGrid(); 
+        if (window.renderMonitorGrid) window.renderMonitorGrid(); 
         
         const bRef = doc(db, 'artifacts', appId, 'public', 'data', 'broadcast_messages', 'current');
         getDoc(bRef).then(snap => {
@@ -2790,28 +2915,6 @@
             });
         }, error => console.error(error));
     };
-
-    function renderMonitorGrid() {
-        const grid = document.getElementById('monitorGrid');
-        grid.innerHTML = "";
-        
-        const classes = [];
-        ['7', '8', '9'].forEach(g => {
-            for(let i=1; i<=17; i++) classes.push(g + padZero(i));
-            classes.push(g + '資');
-        });
-        classes.push('資源班1', '資源班2');
-        
-        classes.forEach(cName => {
-            grid.innerHTML += `
-                <div class="monitor-class-box" id="monitor-box-${cName}">
-                    <h4>${cName}</h4>
-                    <div class="status-text"><span class="status-dot dot-gray" id="dot-online-${cName}"></span> 離線</div>
-                    <div class="status-text"><span class="status-dot dot-gray" id="dot-ack-${cName}"></span> 未收</div>
-                </div>
-            `;
-        });
-    }
 
 </script>
 
