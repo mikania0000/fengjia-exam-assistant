@@ -402,7 +402,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.6</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.6.1</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -416,14 +416,6 @@
             </button>
 
             <p id="phoneLoginMsg" style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;"></p>
-
-            <!-- 除錯主控台 (預設隱藏) -->
-            <div style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                <a href="javascript:void(0)" onclick="document.getElementById('mobileDebugLog').style.display = (document.getElementById('mobileDebugLog').style.display==='none'?'block':'none')" style="font-size: 0.75rem; color: var(--text-muted); text-decoration: none;">🛠️ 顯示除錯日誌</a>
-                <div id="mobileDebugLog" style="display:none; text-align: left; font-size: 0.7rem; background: #333; color: #0f0; padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-family: monospace; border: 1px solid #555;">
-                    <div>[System] Debug Console Initialized...</div>
-                </div>
-            </div>
         </div>
 
         <!-- 選班級畫面 -->
@@ -2518,25 +2510,12 @@
         }
     });
 
-    // --- 全域錯誤攔截 (V 1.4 Debug) ---
-    window.onerror = function(msg, url, line, col, error) {
-        mobileLog(`❌ 系統崩潰: ${msg} (行:${line})`);
-        alert("⚠️ 偵測到程式碼執行錯誤：\n" + msg + "\n\n請截圖告知開發者！");
-        return false;
-    };
-
-    // --- Debug Logger for Mobile ---
+    // --- Debug Logger (V 1.6.1 - Console only) ---
     function mobileLog(msg) {
-        const logEl = document.getElementById('mobileDebugLog');
-        if (logEl) {
-            logEl.style.display = 'block';
-            logEl.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-            logEl.scrollTop = logEl.scrollHeight;
-        }
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("程式啟動中 (V 1.6)...");
+    mobileLog("程式啟動中 (V 1.6.1)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
