@@ -2295,50 +2295,6 @@
     window.dbActions = {};
     window.pendingSyncData = null; 
     
-    // 初始化載入 Firebase 班級資料或退回 GAS
-    window.dbActions.loadClassList = async function() {
-        try {
-            let loaded = false;
-            // 1. Firebase 優先
-            try {
-                const globalClassesRef = doc(window.firebaseDb, 'artifacts', window.firebaseAppId, 'public', 'data', 'global_classes', 'current');
-                const classSnap = await getDoc(globalClassesRef);
-                if(classSnap.exists() && classSnap.data().classes && classSnap.data().classes.length > 0) {
-                    window.globalClassList = classSnap.data().classes;
-                    loaded = true;
-                }
-            } catch(e) { console.warn("Firebase 班級讀取失敗，將嘗試 GAS"); }
-
-            // 2. 退回 GAS 抓取試算表
-            if (!loaded) {
-                const gasClasses = await window.fetchFromGAS('getClasses');
-                if (gasClasses && gasClasses.length > 0) {
-                    window.globalClassList = gasClasses;
-                    loaded = true;
-                }
-            }
-
-            if (!loaded) throw new Error("無資料");
-            window.buildClassDropdown();
-            
-            // 如果管理員監控面板已開啟，重新整理
-            if (appData.isAdmin && window.dbActions.setupMonitor) {
-                window.dbActions.setupMonitor();
-            }
-
-        } catch(e) {
-            console.warn("班級清單載入失敗，改用預設清單:", e);
-            window.globalClassList = [];
-            ['7', '8', '9'].forEach(g => {
-                for(let i=1; i<=17; i++) window.globalClassList.push({id: g + padZero(i), teacher: "", location: ""});
-                window.globalClassList.push({id: g + '資', teacher: "", location: ""});
-            });
-            window.globalClassList.push({id: '資源班1', teacher: "", location: ""});
-            window.globalClassList.push({id: '資源班2', teacher: "", location: ""});
-            window.buildClassDropdown();
-        }
-    };
-
     window.renderMonitorGrid = function() {
         const grid = document.getElementById('monitorGrid');
         grid.innerHTML = "";
@@ -2578,6 +2534,50 @@
     window.dbActions.logoutSystem = function() {
         localStorage.removeItem('fengjia_login_session');
         window.location.reload();
+    };
+
+    // 初始化載入 Firebase 班級資料或退回 GAS
+    window.dbActions.loadClassList = async function() {
+        try {
+            let loaded = false;
+            // 1. Firebase 優先
+            try {
+                const globalClassesRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_classes', 'current');
+                const classSnap = await getDoc(globalClassesRef);
+                if(classSnap.exists() && classSnap.data().classes && classSnap.data().classes.length > 0) {
+                    window.globalClassList = classSnap.data().classes;
+                    loaded = true;
+                }
+            } catch(e) { console.warn("Firebase 班級讀取失敗，將嘗試 GAS"); }
+
+            // 2. 退回 GAS 抓取試算表
+            if (!loaded) {
+                const gasClasses = await window.fetchFromGAS('getClasses');
+                if (gasClasses && gasClasses.length > 0) {
+                    window.globalClassList = gasClasses;
+                    loaded = true;
+                }
+            }
+
+            if (!loaded) throw new Error("無資料");
+            window.buildClassDropdown();
+            
+            // 如果管理員監控面板已開啟，重新整理
+            if (appData.isAdmin && window.dbActions.setupMonitor) {
+                window.dbActions.setupMonitor();
+            }
+
+        } catch(e) {
+            console.warn("班級清單載入失敗，改用預設清單:", e);
+            window.globalClassList = [];
+            ['7', '8', '9'].forEach(g => {
+                for(let i=1; i<=17; i++) window.globalClassList.push({id: g + padZero(i), teacher: "", location: ""});
+                window.globalClassList.push({id: g + '資', teacher: "", location: ""});
+            });
+            window.globalClassList.push({id: '資源班1', teacher: "", location: ""});
+            window.globalClassList.push({id: '資源班2', teacher: "", location: ""});
+            window.buildClassDropdown();
+        }
     };
 
     // Firebase 載入完畢後，執行班級名單獲取
@@ -2954,14 +2954,20 @@
                     // 2. 退回抓取 GAS 安全 API
                     const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
                     if (sheetStudents) {
-                        foundStudents = sheetStudents[className];
-                        if (!foundStudents) {
-                            // 同樣進行前導0相容性檢查
-                            for (let key in sheetStudents) {
-                                if (key.length === 2 && className.length === 3 && key.charAt(0) === className.charAt(0) && key.charAt(1) === className.charAt(2) && className.charAt(1) === '0') {
-                                    foundStudents = sheetStudents[key]; break;
-                                } else if (key.length === 3 && className.length === 2 && key.charAt(0) === className.charAt(0) && key.charAt(2) === className.charAt(1) && key.charAt(1) === '0') {
-                                    foundStudents = sheetStudents[key]; break;
+                        // 檢查回傳資料格式：如果是直接包含座號的物件(例如 "1": "姓名")，則直接使用
+                        // 否則才嘗試以 className 作為 key 抓取
+                        if (sheetStudents["1"] || sheetStudents[1]) {
+                            foundStudents = sheetStudents;
+                        } else {
+                            foundStudents = sheetStudents[className];
+                            if (!foundStudents) {
+                                // 同樣進行前導0相容性檢查
+                                for (let key in sheetStudents) {
+                                    if (key.length === 2 && className.length === 3 && key.charAt(0) === className.charAt(0) && key.charAt(1) === className.charAt(2) && className.charAt(1) === '0') {
+                                        foundStudents = sheetStudents[key]; break;
+                                    } else if (key.length === 3 && className.length === 2 && key.charAt(0) === className.charAt(0) && key.charAt(2) === className.charAt(1) && key.charAt(1) === '0') {
+                                        foundStudents = sheetStudents[key]; break;
+                                    }
                                 }
                             }
                         }
