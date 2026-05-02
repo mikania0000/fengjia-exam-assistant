@@ -2497,7 +2497,7 @@
             appData.userEmail = user.email;
             document.getElementById('userEmailDisplay').innerText = "✅ 登入成功：" + user.email;
             
-            if (sessionToLogin) {
+            if (authSession) {
                 // 如果是在手機授權模式，觸發啟動邏輯
                 document.getElementById('phoneLoginMsg').innerText = "⏳ 偵測到登入，正在啟動授權...";
                 await handleSessionActivation(user);
