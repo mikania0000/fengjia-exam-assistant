@@ -386,6 +386,13 @@
         .dot-gray { background-color: #d1d5db; }
         .status-text { font-size: 0.8rem; color: var(--text-muted); font-weight: bold; display: flex; align-items: center; justify-content: center; margin-bottom: 2px;}
 
+        /* 進階功能子分頁樣式 */
+        .admin-sub-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+        .admin-sub-btn { background: var(--bg-color); color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
+        .admin-sub-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .admin-sub-page { display: none; }
+        .admin-sub-page.active { display: block; }
+
     </style>
 </head>
 <body>
@@ -402,7 +409,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.6.1</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.7</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -750,62 +757,65 @@
 
                 <!-- 分頁 4：進階雲端設定 -->
                 <div id="tab-advanced" class="tab-pane">
-                    <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 10px;">您目前的 Google 帳號授權： <strong id="advUserEmail">未登入</strong></p>
+                    <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 15px;">您目前的 Google 帳號授權： <strong id="advUserEmail">未登入</strong></p>
                     
-                    <div class="cloud-sync-card">
-                        <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程與班級同步 (行政專用)</h3>
-                        <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前設定好的「學期、考試項目、考程表」，一鍵發佈給全校各班下載更新。也能將試算表中的「班級清單」同步至雲端。</p>
-                        <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
-                            <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前考程設定為最新公版</button>
-                            <button class="cloud-btn" style="background: #8b5cf6; color: white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);" onclick="window.dbActions.syncClassesToFirebase()">🔄 從試算表同步班級名單至雲端</button>
-                        </div>
-                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--danger);">* 發佈考程後，所有登入的班級會看到「雲端同步」提示燈號。<br>* 同步班級名單後，登入畫面選單與此處的監控面板會立即更新。</p>
+                    <!-- 行政子分頁切換按鈕 -->
+                    <div class="admin-sub-tabs">
+                        <button class="admin-sub-btn active" onclick="switchAdminSubPage('admin-sch')">📅 考程同步</button>
+                        <button class="admin-sub-btn" onclick="switchAdminSubPage('admin-stud')">🧑‍🎓 名單管理</button>
+                        <button class="admin-sub-btn" onclick="switchAdminSubPage('admin-msg')">🚨 錯題廣播</button>
                     </div>
 
-                    <!-- 全校學生名單管理 -->
-                    <div class="cloud-sync-card" style="border-color: var(--success); background: var(--success-light);">
-                        <h3 style="color: var(--success); margin: 0 0 10px 0; border-bottom: 2px dashed #a5d6b4; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🧑‍🎓 全校學生名單同步 (行政專用)</h3>
-                        <p style="text-align: left; margin-bottom: 10px; color: var(--text-main); font-weight: bold;">請從 Excel 複製「班級、座號、姓名」三個欄位，直接貼在下方框內：</p>
-                        <textarea id="globalStudentInput" placeholder="701&#9;1&#9;王小明&#10;701&#9;2&#9;陳大頭..." style="width: 100%; height: 120px; padding: 12px; border-radius: 8px; border: 2px solid #a5d6b4; font-size: 1rem; resize: none; margin-bottom: 10px;"></textarea>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="cloud-btn" style="background: var(--success); color: white; flex: 1; box-shadow: 0 4px 10px rgba(82, 150, 101, 0.3);" onclick="window.dbActions.uploadGlobalStudents()">☁️ 發佈至雲端 (全校立即套用)</button>
-                            <button class="cloud-btn" style="background: #4a72a8; color: white; flex: 1; box-shadow: 0 4px 10px rgba(74, 114, 168, 0.3);" onclick="window.dbActions.exportFormattedExcel()">📥 下載格式化 Excel (供備份至試算表)</button>
-                        </div>
-                        <button class="cloud-btn" style="background: #4a72a8; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.forceSync()">🔄 強制將 Firebase 資料備份至 Google 試算表</button>
-                        <p style="margin-top: 10px; font-size: 0.9rem; color: var(--success); text-align: left;">* 網頁前端無法直接寫入 Google 試算表。在此發佈至雲端後，全校各班會立刻抓取最新名單。<br>* 若需要備份至 Google 試算表，請點擊「強制備份至 Google 試算表」按鈕，系統將自動寫入試算表。</p>
-                    </div>
-
-                    <!-- 錯題廣播發送與監控區 -->
-                    <div class="cloud-sync-card" style="border-color: var(--danger); background: var(--danger-light);">
-                        <h3 style="color: var(--danger); margin: 0 0 15px 0; border-bottom: 2px dashed #f5b0b0; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🚨 錯題更正廣播系統 (行政專用)</h3>
-                        
-                        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 300px; text-align: left;">
-                                <label style="font-weight: bold; color: var(--danger); display: block; margin-bottom: 8px;">發送對象：</label>
-                                <select id="broadcastTarget" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid #f5b0b0; font-size: 1.1rem; margin-bottom: 15px;">
-                                    <option value="all">全校所有班級</option>
-                                    <option value="7">七年級</option>
-                                    <option value="8">八年級</option>
-                                    <option value="9">九年級</option>
-                                    <option value="特殊">特殊班(資源班)</option>
-                                </select>
-                                
-                                <label style="font-weight: bold; color: var(--danger); display: block; margin-bottom: 8px;">更正訊息內容：</label>
-                                <textarea id="broadcastInput" placeholder="請輸入錯題更正文字... (例如：自然科第15題選項(C)更正為...)" style="width: 100%; height: 120px; padding: 12px; border-radius: 8px; border: 2px solid #f5b0b0; font-size: 1.1rem; resize: none; margin-bottom: 15px;"></textarea>
-                                
-                                <button class="cloud-btn cloud-btn-broadcast" onclick="window.dbActions.sendBroadcast()">🚀 發送錯題更正廣播</button>
-                                <button class="cloud-btn" style="background: #6b7280; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.clearBroadcast()">🧹 收回/清除全校廣播</button>
+                    <!-- 子分頁 A：考程同步 -->
+                    <div id="admin-sch" class="admin-sub-page active">
+                        <div class="cloud-sync-card">
+                            <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程與班級同步</h3>
+                            <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前在「📅 考程」頁面設定好的內容，一鍵發佈給全校各班下載更新。</p>
+                            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
+                                <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前考程設定為最新公版</button>
+                                <button class="cloud-btn" style="background: #8b5cf6; color: white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);" onclick="window.dbActions.syncClassesToFirebase()">🔄 從試算表同步班級名單至雲端</button>
                             </div>
-                            
-                            <div style="flex: 2; min-width: 300px; text-align: left; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
-                                <h4 style="color: var(--text-main); margin: 0 0 10px 0; display: flex; justify-content: space-between; align-items: center;">
-                                    <span>📡 全校班級狀態監控</span>
-                                    <span style="font-size: 0.85rem; font-weight: normal;">
-                                        <span class="status-dot dot-green"></span>在線/已收 <span class="status-dot dot-red" style="margin-left:8px;"></span>離線/未收
-                                    </span>
-                                </h4>
-                                <div id="monitorGrid" class="monitor-grid">
-                                    <!-- JS 動態生成監控網格 -->
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: var(--danger);">* 發佈後，全校班級主畫面會出現「雲端同步」提示燈號。</p>
+                        </div>
+                    </div>
+
+                    <!-- 子分頁 B：學生名單管理 -->
+                    <div id="admin-stud" class="admin-sub-page">
+                        <div class="cloud-sync-card" style="border-color: var(--success); background: var(--success-light);">
+                            <h3 style="color: var(--success); margin: 0 0 10px 0; border-bottom: 2px dashed #a5d6b4; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🧑‍🎓 全校學生名單同步</h3>
+                            <p style="text-align: left; margin-bottom: 10px; color: var(--text-main); font-weight: bold;">請從 Excel 複製「班級、座號、姓名」三個欄位，直接貼在下方框內：</p>
+                            <textarea id="globalStudentInput" placeholder="701&#9;1&#9;王小明&#10;701&#9;2&#9;陳大頭..." style="width: 100%; height: 120px; padding: 12px; border-radius: 8px; border: 2px solid #a5d6b4; font-size: 1rem; resize: none; margin-bottom: 10px;"></textarea>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <button class="cloud-btn" style="background: var(--success); color: white; flex: 1; box-shadow: 0 4px 10px rgba(82, 150, 101, 0.3);" onclick="window.dbActions.uploadGlobalStudents()">☁️ 發佈至雲端 (全校立即套用)</button>
+                                <button class="cloud-btn" style="background: #4a72a8; color: white; flex: 1; box-shadow: 0 4px 10px rgba(74, 114, 168, 0.3);" onclick="window.dbActions.exportFormattedExcel()">📥 下載格式化 Excel (供備份至試算表)</button>
+                            </div>
+                            <button class="cloud-btn" style="background: #4a72a8; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.forceSync()">🔄 強制將 Firebase 資料備份至 Google 試算表</button>
+                        </div>
+                    </div>
+
+                    <!-- 子分頁 C：錯題廣播系統 -->
+                    <div id="admin-msg" class="admin-sub-page">
+                        <div class="cloud-sync-card" style="border-color: var(--danger); background: var(--danger-light);">
+                            <h3 style="color: var(--danger); margin: 0 0 15px 0; border-bottom: 2px dashed #f5b0b0; padding-bottom: 8px; font-size: 1.2rem; text-align: left;">🚨 錯題更正廣播與監控</h3>
+                            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                                <div style="flex: 1; min-width: 250px; text-align: left;">
+                                    <label style="font-weight: bold; color: var(--danger); display: block; margin-bottom: 8px;">發送對象：</label>
+                                    <select id="broadcastTarget" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid #f5b0b0; font-size: 1.1rem; margin-bottom: 15px;">
+                                        <option value="all">全校所有班級</option>
+                                        <option value="7">七年級</option><option value="8">八年級</option><option value="9">九年級</option><option value="特殊">特殊班</option>
+                                    </select>
+                                    <textarea id="broadcastInput" placeholder="請輸入錯題更正文字..." style="width: 100%; height: 100px; padding: 12px; border-radius: 8px; border: 2px solid #f5b0b0; font-size: 1.1rem; resize: none; margin-bottom: 15px;"></textarea>
+                                    <button class="cloud-btn cloud-btn-broadcast" onclick="window.dbActions.sendBroadcast()">🚀 發送錯題更正廣播</button>
+                                    <button class="cloud-btn" style="background: #6b7280; color: white; width: 100%; margin-top: 10px;" onclick="window.dbActions.clearBroadcast()">🧹 收回/清除全校廣播</button>
+                                </div>
+                                <div style="flex: 2; min-width: 300px; text-align: left; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                    <h4 style="color: var(--text-main); margin: 0 0 10px 0; display: flex; justify-content: space-between; align-items: center;">
+                                        <span>📡 全校班級狀態監控</span>
+                                        <span style="font-size: 0.85rem; font-weight: normal;">
+                                            <span class="status-dot dot-green"></span>在線 <span class="status-dot dot-red"></span>離線
+                                        </span>
+                                    </h4>
+                                    <div id="monitorGrid" class="monitor-grid"></div>
                                 </div>
                             </div>
                         </div>
@@ -1399,10 +1409,28 @@
         document.getElementById(tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
         
-        if(tabId === 'tab-advanced' && window.dbActions.setupMonitor) {
-            window.dbActions.setupMonitor();
+        if(tabId === 'tab-advanced') {
+            if (window.dbActions.setupMonitor) window.dbActions.setupMonitor();
+            // 預設切換到第一個子分頁
+            switchAdminSubPage('admin-sch');
         }
     }
+
+    window.switchAdminSubPage = function(pageId) {
+        document.querySelectorAll('.admin-sub-page').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.admin-sub-btn').forEach(el => el.classList.remove('active'));
+        
+        const targetPage = document.getElementById(pageId);
+        if (targetPage) targetPage.classList.add('active');
+        
+        // 找到對應的按鈕並設為 active
+        const btns = document.querySelectorAll('.admin-sub-btn');
+        btns.forEach(btn => {
+            if (btn.getAttribute('onclick').includes(pageId)) {
+                btn.classList.add('active');
+            }
+        });
+    };
 
     function openSettings() {
         appDataBackup = JSON.stringify(appData); 
@@ -2087,32 +2115,56 @@
     function renderStudentsTab() {
         var container = document.getElementById("studentsTableBody"); container.innerHTML = "";
         var seats = Object.keys(appData.students).map(Number).sort((a,b)=>a-b);
-        if (seats.length === 0) return;
-        var colCount = Math.ceil(seats.length / 10) || 1;
-        for(var c = 0; c < colCount; c++) {
-            var colDiv = document.createElement("div"); colDiv.className = "student-column";
-            var header = document.createElement("div"); header.className = "sgh-col";
-            header.innerHTML = "<div style='width:60px; text-align:center;'>座號</div><div style='flex:1; text-align:left;'>姓名 <small style='color:var(--text-muted); font-weight:normal; font-size:0.8rem;'>(不填則顯示為純數字)</small></div><div style='width:30px'></div>";
+        
+        // 強制使用 3 欄位佈局 (1-10, 11-20, 21-30)
+        for(var c = 0; c < 3; c++) {
+            var colDiv = document.createElement("div"); 
+            colDiv.className = "student-column";
+            colDiv.style.flex = "1";
+            colDiv.style.minWidth = "250px";
+            
+            var header = document.createElement("div"); 
+            header.className = "sgh-col";
+            header.style.display = "flex";
+            header.style.background = "var(--primary-light)";
+            header.style.padding = "8px";
+            header.style.fontWeight = "bold";
+            header.style.borderBottom = "2px solid var(--primary)";
+            header.innerHTML = "<div style='width:60px; text-align:center;'>座號</div><div style='flex:1; text-align:left;'>姓名</div><div style='width:30px'></div>";
             colDiv.appendChild(header);
-            for(var i = 0; i < 10; i++) {
-                var idx = c * 10 + i;
-                if(idx < seats.length) {
-                    var seat = seats[idx], name = appData.students[seat];
-                    var div = document.createElement("div"); div.className = "student-row";
-                    div.innerHTML = `<input type='number' class='stud-input-seat' value='${seat}' onchange='autoSaveList()'><input type='text' class='stud-input-name' value='${name}' onchange='autoSaveList()'><button style='color:var(--danger);background:none;border:none;' onclick='this.parentElement.remove(); autoSaveList(); syncStateAndSave(true);'>🗑️</button>`;
-                    colDiv.appendChild(div);
-                }
+
+            for(var i = 1; i <= 10; i++) {
+                var seat = c * 10 + i;
+                var name = appData.students[seat] || "";
+                var div = document.createElement("div"); 
+                div.className = "student-row";
+                div.style.display = "flex";
+                div.style.alignItems = "center";
+                div.style.padding = "4px 8px";
+                div.style.borderBottom = "1px solid var(--border-color)";
+                
+                div.innerHTML = `
+                    <input type='number' class='stud-input-seat' value='${seat}' style='width:60px; text-align:center; border:none; background:transparent;' onchange='autoSaveList()'>
+                    <input type='text' class='stud-input-name' value='${name}' placeholder='無名單' style='flex:1; padding:4px; border-radius:4px; border:1px solid transparent; background:transparent;' onfocus='this.style.border="1px solid var(--primary)"; this.style.background="white"' onblur='this.style.border="1px solid transparent"; this.style.background="transparent"' onchange='autoSaveList()'>
+                    <button style='color:var(--danger);background:none;border:none;cursor:pointer;' onclick='clearStudentRow(${seat})'>🗑️</button>
+                `;
+                colDiv.appendChild(div);
             }
             container.appendChild(colDiv);
         }
     }
 
+    window.clearStudentRow = function(seat) {
+        appData.students[seat] = "";
+        syncStateAndSave(true);
+    };
+
     function autoSaveList() {
         var container = document.getElementById("studentsTableBody");
-        if (!container || container.innerHTML.trim() === "") return; // 防呆
-        var rows = container.querySelectorAll(".student-row");
+        if (!container || container.innerHTML.trim() === "") return;
+        var inputs = container.querySelectorAll(".student-row");
         var newStudents = {};
-        rows.forEach(row => {
+        inputs.forEach(row => {
             var seat = parseInt(row.querySelector(".stud-input-seat").value);
             var name = row.querySelector(".stud-input-name").value.trim();
             if (!isNaN(seat) && seat > 0) newStudents[seat] = name;
@@ -2709,24 +2761,36 @@
             appData.classNum = classVal; 
             appData.className = className;
             
+            // 重設名單與狀態，準備載入新班級
+            appData.students = {};
+            appData.absentList = [];
+            appData.pulloutList = [];
+            
             let foundStudents = {};
             try {
-                // 優先嘗試從 Firebase 抓取全校名單
+                // 1. 優先嘗試從 Firebase 抓取全校名單
                 const globalStudentsRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_students', 'current');
                 const studentSnap = await getDoc(globalStudentsRef);
                 if(studentSnap.exists() && studentSnap.data().students && studentSnap.data().students[className]) {
                     foundStudents = studentSnap.data().students[className];
+                    console.log("從 Firebase 載入名單成功");
                 } else {
-                    // 退回抓取 GAS 安全 API
+                    // 2. 退回抓取 GAS 安全 API
                     const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
                     if (sheetStudents && sheetStudents[className]) {
                         foundStudents = sheetStudents[className];
+                        console.log("從 GAS 載入名單成功");
                     }
                 }
             } catch(e) { console.error("Student load error", e); }
 
-            if(Object.keys(foundStudents).length > 0) appData.students = foundStudents;
-            else for(let i=1; i<=30; i++) appData.students[i] = "";
+            // 如果有抓到名單就套用，否則初始化 30 個空座號
+            if(foundStudents && Object.keys(foundStudents).length > 0) {
+                appData.students = foundStudents;
+            } else {
+                console.warn("找不到名單，初始化空座號");
+                for(let i=1; i<=30; i++) appData.students[i] = "";
+            }
 
             // 載入考程模板
             try {
