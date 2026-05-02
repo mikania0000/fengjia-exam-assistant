@@ -402,7 +402,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.4</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.5</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -2306,15 +2306,12 @@
     let currentBroadcastId = "";
 
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionToLogin = urlParams.get('session');
+    const authSession = urlParams.get('auth_session');
 
-    // --- 輔助函式：處理手機授權邏輯 (集中管理以免重複或失效) ---
+    // --- 輔助函式：處理手機授權邏輯 ---
     async function handleSessionActivation(user) {
-        if (!user || !sessionToLogin) return;
+        if (!user || !authSession) return;
         
-        // 如果已經顯示成功訊息，就不重複執行
-        if (document.getElementById('phoneLoginMsg').innerText.includes("✅")) return;
-
         const email = user.email;
         const isFjm = email.endsWith('@fjm.kh.edu.tw');
         const username = email.split('@')[0];
@@ -2322,53 +2319,28 @@
 
         if (isFjm && !isStudent) {
             try {
-                const sessionRef = doc(db, 'artifacts', appId, 'public', 'data', 'login_sessions', sessionToLogin);
+                mobileLog("正在寫入授權資訊至雲端...");
+                const sessionRef = doc(db, 'artifacts', appId, 'public', 'data', 'login_sessions', authSession);
                 await setDoc(sessionRef, { email: email, success: true, timestamp: Date.now() });
                 
-                document.getElementById('phoneLoginMsg').innerText = "✅ 授權成功！您現在可以關閉此畫面，大螢幕將自動進入系統。";
+                document.getElementById('phoneLoginMsg').innerText = "✅ 授權成功！請查看大螢幕。";
                 document.getElementById('phoneLoginMsg').style.color = "var(--success)";
+                mobileLog("✅ 雲端授權成功");
                 
-                // 隱藏登入按鈕，避免重複點擊
-                const btn = document.querySelector('.google-btn');
+                const btn = document.getElementById('btnPhoneLogin');
                 if (btn) btn.style.display = 'none';
             } catch (e) {
-                console.error("Session activation failed:", e);
+                mobileLog("❌ 授權回報失敗：" + e.message);
                 document.getElementById('phoneLoginMsg').innerText = "❌ 授權回報失敗，請重試：" + e.message;
             }
         } else {
-            document.getElementById('phoneLoginMsg').innerText = isStudent ? "❌ 授權失敗：學生帳號禁止登入！" : "❌ 授權失敗：必須使用學校網域帳號！";
+            const errorMsg = isStudent ? "❌ 授權失敗：學生帳號禁止登入！" : "❌ 授權失敗：必須使用學校網域帳號！";
+            mobileLog(errorMsg);
+            document.getElementById('phoneLoginMsg').innerText = errorMsg;
             document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
             await auth.signOut();
         }
     }
-
-    // --- 處理 Redirect 登入結果 ---
-    getRedirectResult(auth).then(async (result) => {
-        if (result && result.user) {
-            if (sessionToLogin) {
-                await handleSessionActivation(result.user);
-            } else {
-                // 一般登入模式
-                const email = result.user.email;
-                if (email.endsWith('@fjm.kh.edu.tw')) {
-                    appData.userEmail = email;
-                    const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
-                    appData.isAdmin = adminEmails.includes(email.toLowerCase());
-                    saveLocalSession(appData.userEmail, appData.isAdmin);
-
-                    document.getElementById('userEmailDisplay').innerText = "✅ 登入成功：" + email;
-                    document.getElementById('mainLoginCard').style.display = 'none';
-                    document.getElementById('classSelectSection').style.display = 'block';
-                }
-            }
-        }
-    }).catch(e => {
-        console.error("Redirect Error:", e);
-        if (sessionToLogin) {
-            document.getElementById('phoneLoginMsg').innerText = "❌ 登入發生錯誤：" + e.message;
-            document.getElementById('phoneLoginMsg').style.color = "var(--danger)";
-        }
-    });
 
     // --- 本地記憶 8 小時免登入機制 ---
     function checkLocalSession() {
@@ -2560,31 +2532,29 @@
     mobileLog("程式啟動中 (V 1.4)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
-    if (sessionToLogin) {
-        // --- 老師手機端模式 ---
+    // --- 手機授權模式偵測 ---
+    if (authSession) {
         mobileLog("進入手機授權模式");
         document.getElementById('mainLoginCard').style.display = 'none';
         document.getElementById('classSelectSection').style.display = 'none';
         document.getElementById('phoneLoginCard').style.display = 'block';
-        mobileLog("偵測到 Session: " + sessionToLogin);
+        mobileLog("偵測到 Session: " + authSession);
 
         window.dbActions.processPhoneLogin = async function() {
             try {
-                mobileLog("按鈕點擊：準備發起 Google 登入...");
+                mobileLog("發起 Google 登入 (Popup 模式)...");
                 document.getElementById('btnPhoneLogin').disabled = true;
-                document.getElementById('btnPhoneLogin').innerText = "⏳ 跳轉中...";
-                
-                document.getElementById('phoneLoginMsg').innerText = "⏳ 正在前往 Google 登入畫面...";
-                document.getElementById('phoneLoginMsg').style.color = "var(--warning)";
+                document.getElementById('btnPhoneLogin').innerText = "⏳ 登入中...";
 
                 const provider = new GoogleAuthProvider();
                 provider.setCustomParameters({ prompt: 'select_account' });
                 
-                mobileLog("呼叫 Firebase Redirect...");
-                await signInWithRedirect(auth, provider);
-                mobileLog("Redirect 呼叫完成 (等待跳轉)");
+                // 改回 Popup 模式以解決 iOS/Safari Redirect 問題
+                const result = await signInWithPopup(auth, provider);
+                mobileLog("Google 登入成功，正在驗證帳號...");
+                await handleSessionActivation(result.user);
             } catch(e) {
-                mobileLog("❌ 登入發起失敗: " + e.message);
+                mobileLog("❌ 登入失敗: " + e.message);
                 document.getElementById('btnPhoneLogin').disabled = false;
                 document.getElementById('btnPhoneLogin').innerText = "使用學校 Google 帳號授權";
                 document.getElementById('phoneLoginMsg').innerText = "❌ 錯誤：" + e.message;
@@ -2614,15 +2584,15 @@
                 if (localSession.grade && localSession.classNum) {
                     let restoredClassName = localSession.grade === "特殊" ? localSession.classNum : (localSession.grade + localSession.classNum);
                     document.getElementById('mainLoginCard').style.display = 'none';
-                    window.dbActions.enterSystem(true, restoredClassName); // true 代表從 resume 進入，保留本地編輯
+                    window.dbActions.enterSystem(true, restoredClassName);
                 } else {
                     document.getElementById('mainLoginCard').style.display = 'none';
                     document.getElementById('classSelectSection').style.display = 'block';
                 }
             } else {
-                // 沒有紀錄，產生 QR Code 供掃描
-                const sessionId = Math.random().toString(36).substring(2, 12);
-                const loginUrl = window.location.origin + window.location.pathname + '?session=' + sessionId;
+                // 沒有紀錄，大螢幕端永遠顯示 QR Code 並開啟監聽
+                const sessionId = "SESS_" + Date.now() + Math.random().toString(36).substring(7);
+                const loginUrl = window.location.origin + window.location.pathname + '?auth_session=' + sessionId;
                 
                 document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(loginUrl)}`;
                 document.getElementById('qrImage').onload = function() {
@@ -2630,28 +2600,27 @@
                     document.getElementById('qrImage').style.display = 'block';
                 };
 
+                // 監聽對應的授權文件
                 const sessionRef = doc(db, 'artifacts', appId, 'public', 'data', 'login_sessions', sessionId);
                 onSnapshot(sessionRef, async (docSnap) => {
                     if(docSnap.exists() && docSnap.data().success) {
                         const email = docSnap.data().email;
                         appData.userEmail = email;
                         
-                        // 透過安全的 GAS API 取得白名單判斷管理員
+                        // 取得白名單檢查管理員權限
                         const adminEmails = await window.fetchFromGAS('getWhitelist') || [];
-                        if(adminEmails.includes(email.toLowerCase())) {
-                            appData.isAdmin = true;
-                            document.getElementById('btn-tab-advanced').style.display = 'inline-block';
-                            document.getElementById('advUserEmail').innerText = email + " (管理員)";
-                        } else {
-                            appData.isAdmin = false;
-                            document.getElementById('btn-tab-advanced').style.display = 'none';
-                            document.getElementById('advUserEmail').innerText = email;
-                        }
+                        appData.isAdmin = adminEmails.map(e => e.toLowerCase()).includes(email.toLowerCase());
 
-                        // 儲存登入狀態 (8小時有效)
+                        // 儲存本地 Session (8小時免登入)
                         saveLocalSession(appData.userEmail, appData.isAdmin);
 
-                        document.getElementById('userEmailDisplay').innerText = "✅ 登入成功：" + appData.userEmail;
+                        document.getElementById('userEmailDisplay').innerText = "✅ 授權成功：" + email;
+                        if(appData.isAdmin) {
+                            document.getElementById('btn-tab-advanced').style.display = 'inline-block';
+                            document.getElementById('advUserEmail').innerText = email + " (管理員)";
+                        }
+
+                        // 大螢幕自動進入選班級畫面
                         document.getElementById('mainLoginCard').style.display = 'none';
                         document.getElementById('classSelectSection').style.display = 'block';
                     }
@@ -2659,17 +2628,7 @@
             }
         }).catch(e => {
             console.error("Anonymous login failed", e);
-            const qrLoading = document.getElementById('qrLoading');
-            if (e.code === 'auth/admin-restricted-operation') {
-                qrLoading.innerHTML = "<span style='font-size:1.1rem;'>⚠️ <b>必須啟用匿名登入</b></span><br><br>請至 Firebase 後台：<br>1. 點擊 <b>Authentication</b><br>2. 進入 <b>Sign-in method</b><br>3. 啟用 <b>匿名 (Anonymous)</b><br><br>完成後請重新整理網頁。";
-            } else {
-                qrLoading.innerText = "⚠️ 產生條碼失敗：" + e.message;
-            }
-            qrLoading.style.color = "var(--danger)";
-            qrLoading.style.whiteSpace = "normal";
-            qrLoading.style.textAlign = "left";
-            qrLoading.style.padding = "10px";
-            qrLoading.style.lineHeight = "1.5";
+            document.getElementById('qrLoading').innerText = "⚠️ 產生條碼失敗：" + e.message;
         });
     }
 
