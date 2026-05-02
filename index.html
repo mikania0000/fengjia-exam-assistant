@@ -412,7 +412,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8.1</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8.2</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -2724,12 +2724,12 @@
         }
     });
 
-    // --- Debug Logger (V 1.6.1 - Console only) ---
+    // --- Debug Logger (V 1.8.2 - Console only) ---
     function mobileLog(msg) {
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("程式啟動中 (V 1.6.1)...");
+    mobileLog("程式啟動中 (V 1.8.2)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
@@ -2927,8 +2927,8 @@
             appData.students = {};
             appData.absentList = [];
             appData.pulloutList = [];
-            
-            let foundStudents = {};
+
+            let foundStudents = null;
             try {
                 // 1. 優先嘗試從 Firebase 抓取全校名單
                 const globalStudentsRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_students', 'current');
@@ -2936,7 +2936,7 @@
                 if(studentSnap.exists() && studentSnap.data().students) {
                     const allStudents = studentSnap.data().students;
                     foundStudents = allStudents[className];
-                    
+
                     // 前導0相容性檢查 (701 vs 71)
                     if (!foundStudents) {
                         if (/^[789]0\d$/.test(className)) {
@@ -2948,8 +2948,7 @@
                         }
                     }
                     if (foundStudents) console.log("從 Firebase 載入名單成功");
-                } 
-                
+                }
                 if (!foundStudents) {
                     // 2. 退回抓取 GAS 安全 API
                     const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
