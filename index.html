@@ -298,6 +298,9 @@
 
         .modal-body { padding: 15px 20px; flex: 1; display: flex; flex-direction: column; background: white; margin: 10px 15px; border-radius: 16px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.02); transition: background 0.3s; overflow: hidden;}
         [data-theme="dark"] .modal-body { background: var(--card-bg); box-shadow: none; }
+        .students-columns-container { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+        .student-column { flex: 1; min-width: 250px; background: white; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 10px rgba(0,0,0,0.03); overflow: hidden;}
+        
         .tab-pane { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding-right: 5px;}
         .tab-pane.active { display: flex; }
 
@@ -409,7 +412,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.7</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -770,12 +773,38 @@
                     <div id="admin-sch" class="admin-sub-page active">
                         <div class="cloud-sync-card">
                             <h3 style="color: var(--primary); margin: 0 0 10px 0; border-bottom: 2px dashed var(--border-color); padding-bottom: 8px; font-size: 1.2rem; text-align: left;">☁️ 全校考程與班級同步</h3>
-                            <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">將您目前在「📅 考程」頁面設定好的內容，一鍵發佈給全校各班下載更新。</p>
-                            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
-                                <button class="cloud-btn cloud-btn-upload" onclick="window.dbActions.uploadGlobalSettings()">📤 發佈目前考程設定為最新公版</button>
-                                <button class="cloud-btn" style="background: #8b5cf6; color: white; box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);" onclick="window.dbActions.syncClassesToFirebase()">🔄 從試算表同步班級名單至雲端</button>
+                            <p style="color: var(--text-main); font-weight: bold; margin-bottom: 15px;">您可以在下方直接編輯全校公版的考程表，編輯完畢後點擊「發佈」即可更新全校各班。</p>
+                            
+                            <!-- 管理員考程編輯區 -->
+                            <div style="background: white; border-radius: 12px; padding: 15px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <h4 style="color: var(--primary); margin: 0;">📅 公版考程編輯</h4>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <select id="adminSchDaySelect" style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color);" onchange="window.dbActions.switchAdminSchDay()"></select>
+                                        <button class="btn-save" style="background: var(--success); padding: 4px 10px; font-size: 0.85rem; box-shadow: none;" onclick="window.dbActions.addAdminSchRow()">➕ 新增時段</button>
+                                    </div>
+                                </div>
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    <table class="settings-schedule-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 25%;">時間</th><th style="width: 25%;">科目</th><th style="width: 35%;">備註</th><th style="width: 15%;">操作</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="adminSchBody"></tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <p style="margin-top: 10px; font-size: 0.9rem; color: var(--danger);">* 發佈後，全校班級主畫面會出現「雲端同步」提示燈號。</p>
+
+                            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                                <button class="cloud-btn cloud-btn-upload" style="background: var(--primary); flex: 1; min-width: 200px;" onclick="window.dbActions.publishAdminSettings()">🚀 發佈編輯後的考程為最新公版</button>
+                                <button class="cloud-btn" style="background: #4a72a8; color: white; flex: 1; min-width: 200px;" onclick="window.dbActions.backupToGAS()">💾 備份目前的考程至 Google 試算表</button>
+                            </div>
+                            
+                            <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dashed var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                                <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">* 同步班級資料功能：</p>
+                                <button class="cloud-btn" style="background: #8b5cf6; color: white; padding: 6px 12px; font-size: 0.85rem; border-radius: 8px;" onclick="window.dbActions.syncClassesToFirebase()">🔄 從試算表重新同步班級清單</button>
+                            </div>
                         </div>
                     </div>
 
@@ -1430,6 +1459,11 @@
                 btn.classList.add('active');
             }
         });
+
+        // 如果切換到考程同步，觸發渲染
+        if (pageId === 'admin-sch' && window.dbActions.renderAdminSch) {
+            window.dbActions.renderAdminSch();
+        }
     };
 
     function openSettings() {
@@ -2325,6 +2359,134 @@
         }
     };
 
+    // --- 管理員考程編輯邏輯 ---
+    let adminSchData = null;
+    let adminSchDay = "1";
+
+    window.dbActions.renderAdminSch = async function() {
+        if (!appData.isAdmin) return;
+        const tbody = document.getElementById('adminSchBody');
+        const daySel = document.getElementById('adminSchDaySelect');
+        
+        // 如果還沒有編輯中的資料，從目前的 appData 複製一份
+        if (!adminSchData) {
+            adminSchData = JSON.parse(JSON.stringify(appData.schedules));
+        }
+
+        // 更新天數下拉選單
+        daySel.innerHTML = "";
+        const days = Object.keys(adminSchData).sort((a,b)=>a-b);
+        days.forEach(d => {
+            daySel.innerHTML += `<option value="${d}" ${d===adminSchDay?'selected':''}>第 ${d} 天</option>`;
+        });
+
+        // 渲染表格
+        tbody.innerHTML = "";
+        const schedule = adminSchData[adminSchDay] || [];
+        
+        const createTimeInput = (type, index, val) => {
+            return `<input type="time" id="admin-sch-${type}-${index}" value="${val}" style="padding: 2px 4px; width: 100%; border-radius: 4px; border: 1px solid var(--border-color);">`;
+        };
+
+        schedule.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        ${createTimeInput('start', index, item.start)} - ${createTimeInput('end', index, item.end)}
+                    </div>
+                </td>
+                <td><input type="text" id="admin-sch-subj-${index}" value="${item.subject||''}" list="subjectList" style="width: 100%;"></td>
+                <td><input type="text" id="admin-sch-note-${index}" value="${item.note||''}" style="width: 100%;"></td>
+                <td>
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <input type="checkbox" id="admin-sch-exam-${index}" ${item.isExam?'checked':''} title="正式考試">
+                        <button style="color: var(--danger); background: none; border: none; cursor: pointer;" onclick="window.dbActions.deleteAdminSchRow(${index})">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.dbActions.saveAdminSchToMemory = function() {
+        if (!adminSchData || !adminSchData[adminSchDay]) return;
+        const tbody = document.getElementById('adminSchBody');
+        const rows = tbody.querySelectorAll('tr');
+        
+        const newDaySch = [];
+        rows.forEach((row, index) => {
+            newDaySch.push({
+                start: document.getElementById(`admin-sch-start-${index}`).value,
+                end: document.getElementById(`admin-sch-end-${index}`).value,
+                subject: document.getElementById(`admin-sch-subj-${index}`).value.trim(),
+                note: document.getElementById(`admin-sch-note-${index}`).value.trim(),
+                isExam: document.getElementById(`admin-sch-exam-${index}`).checked
+            });
+        });
+        adminSchData[adminSchDay] = newDaySch;
+    };
+
+    window.dbActions.switchAdminSchDay = function() {
+        window.dbActions.saveAdminSchToMemory();
+        adminSchDay = document.getElementById('adminSchDaySelect').value;
+        window.dbActions.renderAdminSch();
+    };
+
+    window.dbActions.addAdminSchRow = function() {
+        window.dbActions.saveAdminSchToMemory();
+        if (!adminSchData[adminSchDay]) adminSchData[adminSchDay] = [];
+        
+        let newStart = "08:00", newEnd = "09:00";
+        const current = adminSchData[adminSchDay];
+        if (current.length > 0) {
+            newStart = current[current.length-1].end;
+            // 自動加 50 分鐘
+            let [h, m] = newStart.split(':').map(Number);
+            m += 50; if(m>=60) { h+=1; m-=60; }
+            newEnd = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        }
+        
+        adminSchData[adminSchDay].push({ start: newStart, end: newEnd, subject: "", note: "", isExam: false });
+        window.dbActions.renderAdminSch();
+    };
+
+    window.dbActions.deleteAdminSchRow = function(index) {
+        window.dbActions.saveAdminSchToMemory();
+        adminSchData[adminSchDay].splice(index, 1);
+        window.dbActions.renderAdminSch();
+    };
+
+    window.dbActions.publishAdminSettings = async function() {
+        if(!appData.isAdmin) return;
+        window.dbActions.saveAdminSchToMemory();
+        
+        if (confirm("確定要將目前的編輯內容發佈為全校公版嗎？\n這會覆蓋雲端上的現有考程，並通知所有班級更新。")) {
+            try {
+                // 更新本機 appData 以便 uploadGlobalSettings 使用
+                appData.schedules = JSON.parse(JSON.stringify(adminSchData));
+                // 自動更新總天數
+                appData.totalDays = Object.keys(adminSchData).length;
+                
+                await window.dbActions.uploadGlobalSettings();
+                showMessageModal("✅ 公版考程已發佈！");
+                renderMainDisplay(); // 更新主畫面顯示
+            } catch(e) { showMessageModal("發佈失敗：" + e.message, true); }
+        }
+    };
+
+    window.dbActions.backupToGAS = async function() {
+        if(!appData.isAdmin) return;
+        window.dbActions.saveAdminSchToMemory();
+        
+        showMessageModal("⏳ 正在備份至 Google 試算表...");
+        try {
+            const res = await window.fetchFromGAS('saveGlobalSchedule', `&data=${encodeURIComponent(JSON.stringify(adminSchData))}`);
+            if (res) showMessageModal("✅ 考程已成功備份至 Google 試算表！");
+            else throw new Error("GAS 回傳失敗");
+        } catch(e) { showMessageModal("備份失敗：" + e.message, true); }
+    };
+
 </script>
 
 <!-- Firebase v11 Module (Strict Paths & Auth Required) -->
@@ -2771,15 +2933,39 @@
                 // 1. 優先嘗試從 Firebase 抓取全校名單
                 const globalStudentsRef = doc(db, 'artifacts', appId, 'public', 'data', 'global_students', 'current');
                 const studentSnap = await getDoc(globalStudentsRef);
-                if(studentSnap.exists() && studentSnap.data().students && studentSnap.data().students[className]) {
-                    foundStudents = studentSnap.data().students[className];
-                    console.log("從 Firebase 載入名單成功");
-                } else {
+                if(studentSnap.exists() && studentSnap.data().students) {
+                    const allStudents = studentSnap.data().students;
+                    foundStudents = allStudents[className];
+                    
+                    // 前導0相容性檢查 (701 vs 71)
+                    if (!foundStudents) {
+                        if (/^[789]0\d$/.test(className)) {
+                            let altKey = className.charAt(0) + className.charAt(2);
+                            foundStudents = allStudents[altKey];
+                        } else if (/^[789]\d$/.test(className)) {
+                            let altKey = className.charAt(0) + "0" + className.charAt(1);
+                            foundStudents = allStudents[altKey];
+                        }
+                    }
+                    if (foundStudents) console.log("從 Firebase 載入名單成功");
+                } 
+                
+                if (!foundStudents) {
                     // 2. 退回抓取 GAS 安全 API
                     const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
-                    if (sheetStudents && sheetStudents[className]) {
+                    if (sheetStudents) {
                         foundStudents = sheetStudents[className];
-                        console.log("從 GAS 載入名單成功");
+                        if (!foundStudents) {
+                            // 同樣進行前導0相容性檢查
+                            for (let key in sheetStudents) {
+                                if (key.length === 2 && className.length === 3 && key.charAt(0) === className.charAt(0) && key.charAt(1) === className.charAt(2) && className.charAt(1) === '0') {
+                                    foundStudents = sheetStudents[key]; break;
+                                } else if (key.length === 3 && className.length === 2 && key.charAt(0) === className.charAt(0) && key.charAt(2) === className.charAt(1) && key.charAt(1) === '0') {
+                                    foundStudents = sheetStudents[key]; break;
+                                }
+                            }
+                        }
+                        if (foundStudents) console.log("從 GAS 載入名單成功");
                     }
                 }
             } catch(e) { console.error("Student load error", e); }
