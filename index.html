@@ -402,21 +402,28 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.5.2</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.6</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
         <div class="login-card" id="phoneLoginCard" style="display:none;">
             <h1>鳳甲大螢幕授權</h1>
-            <p style="color: var(--text-main); font-weight: bold; margin-bottom: 10px;">您即將登入並開通大螢幕系統</p>
-            <div id="mobileDebugLog" style="display:block; text-align: left; font-size: 0.75rem; background: #333; color: #0f0; padding: 10px; border-radius: 8px; margin-bottom: 15px; max-height: 200px; overflow-y: auto; font-family: monospace; border: 2px solid #555;">
-                <div>[System] Debug Console Ready...</div>
-            </div>
+            <p style="color: var(--text-main); font-weight: bold; margin-bottom: 20px;">您即將登入並開通大螢幕系統</p>
+            
             <button class="google-btn" id="btnPhoneLogin" onclick="window.dbActions.processPhoneLogin()">
                 <svg viewBox="0 0 48 48" style="width:24px;height:24px;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path></svg>
                 使用學校 Google 帳號授權
             </button>
+
             <p id="phoneLoginMsg" style="margin-top: 20px; font-weight: bold; font-size: 1.1rem;"></p>
+
+            <!-- 除錯主控台 (預設隱藏) -->
+            <div style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <a href="javascript:void(0)" onclick="document.getElementById('mobileDebugLog').style.display = (document.getElementById('mobileDebugLog').style.display==='none'?'block':'none')" style="font-size: 0.75rem; color: var(--text-muted); text-decoration: none;">🛠️ 顯示除錯日誌</a>
+                <div id="mobileDebugLog" style="display:none; text-align: left; font-size: 0.7rem; background: #333; color: #0f0; padding: 10px; border-radius: 8px; margin-top: 10px; max-height: 150px; overflow-y: auto; font-family: monospace; border: 1px solid #555;">
+                    <div>[System] Debug Console Initialized...</div>
+                </div>
+            </div>
         </div>
 
         <!-- 選班級畫面 -->
@@ -2529,7 +2536,7 @@
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("程式啟動中 (V 1.5.2)...");
+    mobileLog("程式啟動中 (V 1.6)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
@@ -2547,7 +2554,11 @@
                 document.getElementById('btnPhoneLogin').innerText = "⏳ 登入中...";
 
                 const provider = new GoogleAuthProvider();
-                provider.setCustomParameters({ prompt: 'select_account' });
+                // 強制帳號選擇，並指定學校網域作為優先建議
+                provider.setCustomParameters({ 
+                    prompt: 'select_account',
+                    hd: 'fjm.kh.edu.tw'
+                });
                 
                 // 改回 Popup 模式以解決 iOS/Safari Redirect 問題
                 const result = await signInWithPopup(auth, provider);
