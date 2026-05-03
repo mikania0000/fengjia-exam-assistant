@@ -90,7 +90,7 @@
         .class-select-area label { font-weight: bold; color: var(--text-main); display: block; margin-bottom: 8px;}
         .class-select-area select {
             width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 12px;
-            font-size: 1.1rem; margin-bottom: 20px; background: #faf8f5; color: var(--text-main);
+            font-size: 20px; margin-bottom: 20px; background: #faf8f5; color: var(--text-main);
         }
         .btn-enter {
             background: var(--primary); color: white; width: 100%; border: none; border-radius: 50px;
@@ -412,7 +412,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8.2</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8.6</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -1021,7 +1021,7 @@
 
 <script>
     // === 核心資料區 ===
-    // 您的專屬 GAS 應用程式網址
+    // 您的專屬 GAS 應用程式網址 (部署後請替換為您自己的 GAS 網址)
     const GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyEi7vDIjiBg9FHdjWFtq962NgANOQ2Z65e19FcFC7lyf598mwEdQsMnDuKYdhL1PSQ/exec";
     const GAS_TOKEN = "fengjia_secure_2026"; // 必須與 GAS 的設定匹配
 
@@ -1055,17 +1055,17 @@
 
             const opt = document.createElement('option');
             opt.value = name;
-            // 只要顯示 班級 + 導師
-            let text = name + "班";
-            if (cls.teacher) text += ` - ${cls.teacher}`;
-            opt.innerText = text;
+            // 只要顯示班級，取消導師名字
+            opt.innerText = name + "班";
             if (optgroup) optgroup.appendChild(opt);
         });
         if (optgroup) classSel.appendChild(optgroup);
     };
 
+    // 【修正1】加上 &_t=timestamp 快取破壞機制，強制抓取最新 GAS 資料
     window.fetchFromGAS = async function(action, params = "") {
-        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}`;
+        const timestamp = new Date().getTime();
+        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}&_t=${timestamp}`;
         try {
             const res = await fetch(url);
             const json = await res.json();
@@ -1764,7 +1764,7 @@
                 if (json.length > 0) {
                     var tempStudents = {}; var count = 0;
                     json.forEach(function(row) {
-                        var num = parseInt(row["座號"]);
+                        var num = parseInt(row["座號"], 10);
                         var name = (row["姓名"] || "").toString().trim();
                         if (!isNaN(num) && num > 0) { tempStudents[num] = name; count++; }
                     });
@@ -1812,10 +1812,10 @@
             if (cols.length >= 2) {
                 var seatStr = cols[idxMap.seat] ? cols[idxMap.seat].trim() : "";
                 var nameStr = cols[idxMap.name] ? cols[idxMap.name].trim() : "";
-                if (isNaN(parseInt(seatStr)) && !isNaN(parseInt(nameStr))) {
+                if (isNaN(parseInt(seatStr, 10)) && !isNaN(parseInt(nameStr, 10))) {
                     let temp = seatStr; seatStr = nameStr; nameStr = temp;
                 }
-                var num = parseInt(seatStr);
+                var num = parseInt(seatStr, 10);
                 if (!isNaN(num) && num > 0 && nameStr !== "姓名") {
                     tempStudents[num] = nameStr === "" ? "" : nameStr; count++;
                 }
@@ -1953,7 +1953,7 @@
 
             importedTmpls.add(tmplKey);
             
-            let d = parseInt(r["天數"]);
+            let d = parseInt(r["天數"], 10);
             if(!isNaN(d) && d > 0) {
                 if(!maxDays[tmplKey] || d > maxDays[tmplKey]) maxDays[tmplKey] = d;
                 if(!newTemplates[tmplKey]) newTemplates[tmplKey] = {};
@@ -2119,17 +2119,18 @@
     }
 
     function requestGenerateSeats() {
-        var count = parseInt(document.getElementById("quickSeatCount").value) || 30;
+        var count = parseInt(document.getElementById("quickSeatCount").value, 10) || 30;
         var newStudents = {};
         for (var i = 1; i <= count; i++) newStudents[i] = appData.students[i] || "";
         appData.students = newStudents; appData.absentList = []; appData.pulloutList = [];
         syncStateAndSave(true);
     }
 
+    // 核心資料更新防呆檢查機制
     function syncStateAndSave(reRenderList) {
         var maxSeat = 0; var hasAnyName = false;
         for(var key in appData.students) {
-            var v = parseInt(key);
+            var v = parseInt(key, 10);
             if(v > maxSeat) maxSeat = v;
             if(appData.students[key].trim() !== "") hasAnyName = true;
         }
@@ -2144,6 +2145,21 @@
         if (reRenderList) renderStudentsTab();
         generateStudentChips(); updateStats(); isDirty = true; saveDataToStorage();
         if (document.getElementById("settingsModal").style.display === "flex") appDataBackup = JSON.stringify(appData); 
+    }
+
+    function updateToggleButtonUI() {
+        // UI 更新用的輔助方法
+    }
+
+    function getListFromBox(boxId) {
+        var list = [];
+        var box = document.getElementById(boxId);
+        if(!box) return list;
+        var chips = box.querySelectorAll(".student-chip");
+        chips.forEach(function(chip) {
+            list.push(parseInt(chip.dataset.number, 10));
+        });
+        return list;
     }
 
     function renderStudentsTab() {
@@ -2199,7 +2215,7 @@
         var inputs = container.querySelectorAll(".student-row");
         var newStudents = {};
         inputs.forEach(row => {
-            var seat = parseInt(row.querySelector(".stud-input-seat").value);
+            var seat = parseInt(row.querySelector(".stud-input-seat").value, 10);
             var name = row.querySelector(".stud-input-name").value.trim();
             if (!isNaN(seat) && seat > 0) newStudents[seat] = name;
         });
@@ -2254,7 +2270,7 @@
         var target = e.target; while(target && !target.classList.contains('drag-box')) target = target.parentElement;
         if (target && chip) {
             target.classList.remove("drag-over"); target.appendChild(chip);
-            var num = parseInt(chip.dataset.number);
+            var num = parseInt(chip.dataset.number, 10);
             appData.absentList = appData.absentList.filter(n => n !== num);
             appData.pulloutList = appData.pulloutList.filter(n => n !== num);
             if (target.id === "box-absent") appData.absentList.push(num);
@@ -2324,19 +2340,16 @@
         const tbody = document.getElementById('adminSchBody');
         const daySel = document.getElementById('adminSchDaySelect');
         
-        // 如果還沒有編輯中的資料，從目前的 appData 複製一份
         if (!adminSchData) {
             adminSchData = JSON.parse(JSON.stringify(appData.schedules));
         }
 
-        // 更新天數下拉選單
         daySel.innerHTML = "";
         const days = Object.keys(adminSchData).sort((a,b)=>a-b);
         days.forEach(d => {
             daySel.innerHTML += `<option value="${d}" ${d===adminSchDay?'selected':''}>第 ${d} 天</option>`;
         });
 
-        // 渲染表格
         tbody.innerHTML = "";
         const schedule = adminSchData[adminSchDay] || [];
         
@@ -2397,7 +2410,6 @@
         const current = adminSchData[adminSchDay];
         if (current.length > 0) {
             newStart = current[current.length-1].end;
-            // 自動加 50 分鐘
             let [h, m] = newStart.split(':').map(Number);
             m += 50; if(m>=60) { h+=1; m-=60; }
             newEnd = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
@@ -2419,14 +2431,11 @@
         
         if (confirm("確定要將目前的編輯內容發佈為全校公版嗎？\n這會覆蓋雲端上的現有考程，並通知所有班級更新。")) {
             try {
-                // 更新本機 appData 以便 uploadGlobalSettings 使用
                 appData.schedules = JSON.parse(JSON.stringify(adminSchData));
-                // 自動更新總天數
                 appData.totalDays = Object.keys(adminSchData).length;
-                
                 await window.dbActions.uploadGlobalSettings();
                 showMessageModal("✅ 公版考程已發佈！");
-                renderMainDisplay(); // 更新主畫面顯示
+                renderMainDisplay(); 
             } catch(e) { showMessageModal("發佈失敗：" + e.message, true); }
         }
     };
@@ -2467,7 +2476,6 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 暴露給全域以便 GAS fetch 使用
     window.firebaseDb = db;
     window.firebaseAppId = appId;
     
@@ -2477,7 +2485,6 @@
     const urlParams = new URLSearchParams(window.location.search);
     const authSession = urlParams.get('auth_session');
 
-    // --- 輔助函式：處理手機授權邏輯 ---
     async function handleSessionActivation(user) {
         if (!user || !authSession) return;
         
@@ -2620,7 +2627,7 @@
         lines.forEach(line => {
             const parts = line.split('\t').map(p => p.trim());
             if(parts.length >= 3) {
-                data.push([parts[0], parseInt(parts[1]), parts[2]]);
+                data.push([parts[0], parseInt(parts[1], 10), parts[2]]);
             }
         });
 
@@ -2668,7 +2675,7 @@
             const parts = line.split('\t').map(p => p.trim());
             if(parts.length >= 3) {
                 const cName = parts[0];
-                const seat = parseInt(parts[1]);
+                const seat = parseInt(parts[1], 10);
                 const sName = parts[2];
                 if(!isNaN(seat)) {
                     if(!studentsData[cName]) studentsData[cName] = {};
@@ -2724,12 +2731,12 @@
         }
     });
 
-    // --- Debug Logger (V 1.8.2 - Console only) ---
+    // --- Debug Logger (V 1.8.6 - Console only) ---
     function mobileLog(msg) {
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("程式啟動中 (V 1.8.2)...");
+    mobileLog("程式啟動中 (V 1.8.6)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
@@ -2953,9 +2960,11 @@
                     // 2. 退回抓取 GAS 安全 API
                     const sheetStudents = await window.fetchFromGAS('getStudents', `&class=${className}`);
                     if (sheetStudents) {
-                        // 檢查回傳資料格式：如果是直接包含座號的物件(例如 "1": "姓名")，則直接使用
-                        // 否則才嘗試以 className 作為 key 抓取
-                        if (sheetStudents["1"] || sheetStudents[1]) {
+                        // 檢查回傳資料格式：如果包含任一數字座號鍵值，代表它是直接的座號對應表
+                        const keys = Object.keys(sheetStudents);
+                        const hasNumericKeys = keys.length > 0 && keys.some(k => !isNaN(parseInt(k, 10)));
+                        
+                        if (hasNumericKeys && !sheetStudents[className]) {
                             foundStudents = sheetStudents;
                         } else {
                             foundStudents = sheetStudents[className];
