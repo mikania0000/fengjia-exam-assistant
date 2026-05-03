@@ -412,7 +412,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.8.6</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.9.0</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -451,7 +451,7 @@
             </div>
             <div class="modal-body" style="padding: 30px; text-align: center; background: #fffcfc;">
                 <h3 style="color: var(--text-main); margin-bottom: 20px; font-size: 1.3rem;">請監考老師注意，有最新的試題更正訊息：</h3>
-                <div id="broadcastReceiveText" style="font-size: 1.8rem; font-weight: bold; color: var(--danger); padding: 20px; background: #fdeaea; border-radius: 12px; white-space: pre-wrap; line-height: 1.5; border: 2px dashed #f5b0b0; margin-bottom: 30px;">
+                <div id="broadcastReceiveText" style="font-size: 1.5rem; font-weight: bold; color: var(--danger); padding: 20px; background: #fdeaea; border-radius: 12px; line-height: 1.5; border: 2px dashed #f5b0b0; margin-bottom: 30px; text-align: left; max-height: 40vh; overflow-y: auto;">
                     載入中...
                 </div>
                 <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 20px;">請向全班同學宣佈此更正訊息，佈達完畢後請點擊下方按鈕回報行政端並收納。</p>
@@ -1034,13 +1034,20 @@
         let currentGrade = "";
         let optgroup = null;
 
+        // 加入行政人員獨立選項
+        const adminOpt = document.createElement('option');
+        adminOpt.value = "行政人員";
+        adminOpt.innerText = "⭐ 行政人員專用";
+        classSel.appendChild(adminOpt);
+
         if (window.globalClassList.length === 0) {
-            classSel.innerHTML = '<option value="" disabled>無法取得班級名單</option>';
+            classSel.innerHTML += '<option value="" disabled>無法取得班級名單</option>';
             return;
         }
 
         window.globalClassList.forEach(cls => {
             const name = String(cls.id);
+            if (name === "行政人員") return; // 避免與上方重複
             let grade = "其他 / 特殊班";
             if (/^[789]\d{2}$/.test(name)) {
                 grade = name.charAt(0) + "年級";
@@ -1062,17 +1069,26 @@
         if (optgroup) classSel.appendChild(optgroup);
     };
 
-    // 【修正1】加上 &_t=timestamp 快取破壞機制，強制抓取最新 GAS 資料
+    // 加上 &_t=timestamp 快取破壞機制，強制抓取最新 GAS 資料
     window.fetchFromGAS = async function(action, params = "") {
         const timestamp = new Date().getTime();
         const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}&_t=${timestamp}`;
         try {
-            const res = await fetch(url);
-            const json = await res.json();
-            if(json.error) throw new Error(json.error);
-            return json.data;
+            const res = await fetch(url, {
+                method: 'GET',
+                mode: 'cors'
+            });
+            const text = await res.text();
+            try {
+                const json = JSON.parse(text);
+                if(json.error) throw new Error(json.error);
+                return json.data;
+            } catch (err) {
+                console.warn(`[GAS 資料解析錯誤] 動作 "${action}" 回傳的格式不正確。`);
+                return null;
+            }
         } catch(e) {
-            console.error("GAS Fetch Error:", e);
+            console.warn(`[GAS 連線提示] 動作 "${action}" 無法取得資料。這通常是因為 GAS 部署權限未設定為「所有人 (Anyone)」，或是網路連線被阻擋。系統將自動使用備用資料。`);
             return null;
         }
     };
@@ -1115,7 +1131,8 @@
         lastReceivedMsgId: "", lastSyncAt: 0, userEmail: "", isAdmin: false,
         activeTemplate: "midterm",
         scheduleTemplates: JSON.parse(JSON.stringify(defaultScheduleTemplates)),
-        schedules: JSON.parse(JSON.stringify(defaultScheduleTemplates["midterm"]))
+        schedules: JSON.parse(JSON.stringify(defaultScheduleTemplates["midterm"])),
+        ackMsgs: [] // 儲存已接收的多則廣播ID
     };
 
     var appData = JSON.parse(JSON.stringify(defaultAppData));
@@ -1123,6 +1140,12 @@
     var lastSpokenEvent = "";
     var isDirty = false;
     var appDataBackup = "";
+    
+    // 用來儲存當下抓到的未讀多則訊息
+    let currentUnackMsgs = [];
+    // 用於行政監控燈號的全局變數
+    let currentGlobalMsgs = [];
+    let currentBroadcastId = "";
 
     function padZero(num) {
         var n = parseInt(num, 10);
@@ -1306,9 +1329,13 @@
                 countdownHtml = "【" + item.subject + "】結束倒數 <span class='countdown-time'>" + remain2 + "</span>";
             }
 
+            // 打鐘下課/考試結束觸發 (自動清除本機顯示區，但不影響資料庫，以防其他班還沒看)
             if (exactTimeStr === (item.end + ":00") && item.isExam && lastSpokenEvent !== (item.end + "-end")) {
                 speak("考試結束，請立即停筆");
                 lastSpokenEvent = item.end + "-end";
+                
+                document.getElementById('broadcastDisplaySection').style.display = 'none';
+                document.getElementById('broadcastDisplayText').innerHTML = "無";
             }
             
             if (appData.displayDay === "2" && item.subject.indexOf("英語") !== -1 && exactTimeStr === "08:40:00" && lastSpokenEvent !== "english-listening") {
@@ -1440,7 +1467,6 @@
         
         if(tabId === 'tab-advanced') {
             if (window.dbActions.setupMonitor) window.dbActions.setupMonitor();
-            // 預設切換到第一個子分頁
             switchAdminSubPage('admin-sch');
         }
     }
@@ -1452,7 +1478,6 @@
         const targetPage = document.getElementById(pageId);
         if (targetPage) targetPage.classList.add('active');
         
-        // 找到對應的按鈕並設為 active
         const btns = document.querySelectorAll('.admin-sub-btn');
         btns.forEach(btn => {
             if (btn.getAttribute('onclick').includes(pageId)) {
@@ -1460,7 +1485,6 @@
             }
         });
 
-        // 如果切換到考程同步，觸發渲染
         if (pageId === 'admin-sch' && window.dbActions.renderAdminSch) {
             window.dbActions.renderAdminSch();
         }
@@ -2318,13 +2342,17 @@
         if (window.globalClassList && window.globalClassList.length > 0) {
             window.globalClassList.forEach(cls => {
                 const cName = cls.id;
+                if (cName === "行政人員") return; // 行政不顯示在監控面版
+                
                 grid.innerHTML += `
                     <div class="monitor-class-box" id="monitor-box-${cName}">
                         <h4 style="margin: 0 0 2px 0; color: var(--primary); font-size: 1.1rem;">${cName}</h4>
                         <div style="font-size: 0.85rem; font-weight: bold; color: var(--text-main); margin-bottom: 2px;">${cls.teacher || '未設定'}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; background: #f0f0f0; border-radius: 4px; padding: 2px;">📍 ${cls.location || '未設定'}</div>
                         <div class="status-text"><span class="status-dot dot-gray" id="dot-online-${cName}"></span> 離線</div>
-                        <div class="status-text"><span class="status-dot dot-gray" id="dot-ack-${cName}"></span> 未收</div>
+                        <div class="status-text" style="margin-top:4px;" id="msg-dots-${cName}">
+                            <span style="font-size:0.75rem; color:#aaa;">無廣播</span>
+                        </div>
                     </div>
                 `;
             });
@@ -2480,7 +2508,6 @@
     window.firebaseAppId = appId;
     
     let currentUser = null;
-    let currentBroadcastId = "";
 
     const urlParams = new URLSearchParams(window.location.search);
     const authSession = urlParams.get('auth_session');
@@ -2731,12 +2758,12 @@
         }
     });
 
-    // --- Debug Logger (V 1.8.6 - Console only) ---
+    // --- Debug Logger ---
     function mobileLog(msg) {
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("程式啟動中 (V 1.8.6)...");
+    mobileLog("蝔銝 (V 1.9.0)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
@@ -2799,7 +2826,7 @@
 
                 // 若之前已選擇過班級，直接無縫進入系統
                 if (localSession.grade && localSession.classNum) {
-                    let restoredClassName = localSession.grade === "特殊" ? localSession.classNum : (localSession.grade + localSession.classNum);
+                    let restoredClassName = localSession.grade === "行政" ? "行政人員" : (localSession.grade === "特殊" ? localSession.classNum : (localSession.grade + localSession.classNum));
                     document.getElementById('mainLoginCard').style.display = 'none';
                     window.dbActions.enterSystem(true, restoredClassName);
                 } else {
@@ -2859,7 +2886,6 @@
                 hd: 'fjm.kh.edu.tw' 
             });
             
-            // 手機版使用 Redirect 以避免彈窗被攔截；電腦版維持 Popup 體驗較佳
             const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
             
             if (isMobile) {
@@ -2916,7 +2942,10 @@
 
         let grade = "特殊";
         let classVal = className;
-        if (/^[789]\d{2}$/.test(className)) {
+        if (className === "行政人員") {
+            grade = "行政";
+            classVal = "行政人員";
+        } else if (/^[789]\d{2}$/.test(className)) {
             grade = className.charAt(0);
             classVal = className.substring(1);
         }
@@ -2984,9 +3013,16 @@
                 }
             } catch(e) { console.error("Student load error", e); }
 
-            // 如果有抓到名單就套用，否則初始化 30 個空座號
+            // 強制過濾並載入學生資料 (即使沒有姓名，只要有座號就載入)
             if(foundStudents && Object.keys(foundStudents).length > 0) {
-                appData.students = foundStudents;
+                let cleanStudents = {};
+                for (let k in foundStudents) {
+                    let num = parseInt(k, 10);
+                    if (!isNaN(num) && num > 0) {
+                        cleanStudents[num] = foundStudents[k];
+                    }
+                }
+                appData.students = cleanStudents;
             } else {
                 console.warn("找不到名單，初始化空座號");
                 for(let i=1; i<=30; i++) appData.students[i] = "";
@@ -3042,7 +3078,7 @@
             await setDoc(onlineRef, {
                 className: appData.className, grade: appData.grade, online: true,
                 lastSeen: Date.now(), user: appData.userEmail,
-                lastReceivedMsgId: appData.lastReceivedMsgId || ""
+                ackMsgs: appData.ackMsgs || []
             }, { merge: true });
         } catch(e) { console.error("Heartbeat Error", e); }
     }
@@ -3119,39 +3155,70 @@
         } catch(e) { console.error(e); showMessageModal("發佈失敗：" + e.message, true); }
     };
 
-    // --- 接收錯題廣播系統 ---
+    // --- 接收錯題廣播系統 (多則訊息佇列版) ---
     function listenForBroadcasts() {
         const bRef = doc(db, 'artifacts', appId, 'public', 'data', 'broadcast_messages', 'current');
         onSnapshot(bRef, (docSnap) => {
-            if(docSnap.exists()) {
-                const data = docSnap.data();
-                if(data.active && (data.targetGrade === 'all' || data.targetGrade === appData.grade || (data.targetGrade === '特殊' && appData.grade === '特殊'))) {
-                    if(data.id !== appData.lastReceivedMsgId) {
-                        currentBroadcastId = data.id;
-                        document.getElementById('broadcastReceiveText').innerText = data.message;
-                        document.getElementById('broadcastReceiveModal').style.display = 'flex';
-                    }
-                } else if (!data.active) {
+            if(docSnap.exists() && docSnap.data().activeMessages) {
+                const allMsgs = docSnap.data().activeMessages;
+                
+                // 若全校廣播被行政端清除，本地同步清空佇列與畫面
+                if (allMsgs.length === 0) {
+                    appData.ackMsgs = [];
+                    saveDataToStorage();
                     document.getElementById('broadcastDisplaySection').style.display = 'none';
-                    document.getElementById('broadcastDisplayText').innerText = "";
+                    document.getElementById('broadcastDisplayText').innerHTML = "無";
                     document.getElementById('broadcastReceiveModal').style.display = 'none';
+                    currentUnackMsgs = [];
+                    return;
+                }
+
+                // 過濾出屬於該班級的訊息
+                let myMsgs = allMsgs.filter(m => 
+                    m.targetGrade === 'all' || 
+                    m.targetGrade === appData.grade || 
+                    (m.targetGrade === '特殊' && appData.grade === '特殊')
+                );
+
+                // 計算有幾則還沒按過「已收」的訊息
+                currentUnackMsgs = myMsgs.filter(m => !appData.ackMsgs.includes(m.id));
+
+                if (currentUnackMsgs.length > 0) {
+                    currentBroadcastId = currentUnackMsgs[0].id;
+                    document.getElementById('broadcastReceiveText').innerText = currentUnackMsgs[0].message;
+                    document.getElementById('broadcastReceiveModal').style.display = 'flex';
+                }
+
+                if (myMsgs.length > 0) {
+                    document.getElementById('broadcastDisplaySection').style.display = 'flex';
+                    document.getElementById('broadcastDisplayText').innerHTML = myMsgs.map((m, i) => `<div style="margin-bottom:8px; border-bottom:1px dashed #f5b0b0; padding-bottom:8px;"><b>[訊息 ${i+1}]</b><br>${m.message}</div>`).join("");
                 }
             }
         }, (error) => console.error("Broadcast Listen Error", error));
     }
 
     window.dbActions.ackBroadcast = async function() {
-        appData.lastReceivedMsgId = currentBroadcastId;
-        document.getElementById('broadcastReceiveModal').style.display = 'none';
-        
-        document.getElementById('broadcastDisplaySection').style.display = 'flex';
-        document.getElementById('broadcastDisplayText').innerText = document.getElementById('broadcastReceiveText').innerText;
+        if (!appData.ackMsgs.includes(currentBroadcastId)) {
+            appData.ackMsgs.push(currentBroadcastId);
+        }
         
         saveDataToStorage();
         updateOnlineStatus(); 
+        
+        document.getElementById('broadcastReceiveModal').style.display = 'none';
+        
+        // 如果還有未收訊息，延遲半秒後再跳出下一個
+        currentUnackMsgs = currentUnackMsgs.filter(m => m.id !== currentBroadcastId);
+        if (currentUnackMsgs.length > 0) {
+            setTimeout(() => {
+                currentBroadcastId = currentUnackMsgs[0].id;
+                document.getElementById('broadcastReceiveText').innerText = currentUnackMsgs[0].message;
+                document.getElementById('broadcastReceiveModal').style.display = 'flex';
+            }, 500); 
+        }
     };
 
-    // --- 發送與清除錯題廣播 (行政端) ---
+    // --- 發送與清除錯題廣播 (行政端 多訊息版) ---
     window.dbActions.sendBroadcast = async function() {
         if(!appData.isAdmin) { showMessageModal("您沒有發送廣播的權限！", true); return; }
         const target = document.getElementById('broadcastTarget').value;
@@ -3161,11 +3228,19 @@
         try {
             const newId = "MSG_" + Date.now();
             const bRef = doc(db, 'artifacts', appId, 'public', 'data', 'broadcast_messages', 'current');
-            await setDoc(bRef, {
-                id: newId, targetGrade: target, message: msg,
-                active: true, timestamp: Date.now(), sender: appData.userEmail
+            
+            // 抓取目前的廣播陣列並推入新訊息
+            const snap = await getDoc(bRef);
+            let activeMessages = [];
+            if (snap.exists() && snap.data().activeMessages) {
+                activeMessages = snap.data().activeMessages;
+            }
+            
+            activeMessages.push({
+                id: newId, targetGrade: target, message: msg, timestamp: Date.now(), sender: appData.userEmail
             });
-            currentBroadcastId = newId; 
+            
+            await setDoc(bRef, { activeMessages: activeMessages });
             showMessageModal("🚀 廣播已發送，請監控各班接收狀況。");
             document.getElementById('broadcastInput').value = "";
         } catch(e) { console.error(e); showMessageModal("發送失敗", true); }
@@ -3175,51 +3250,82 @@
         if(!appData.isAdmin) { showMessageModal("您沒有清除廣播的權限！", true); return; }
         try {
             const bRef = doc(db, 'artifacts', appId, 'public', 'data', 'broadcast_messages', 'current');
-            await setDoc(bRef, {
-                id: "CLEAR_" + Date.now(), targetGrade: "all", message: "",
-                active: false, timestamp: Date.now(), sender: appData.userEmail
-            });
-            showMessageModal("🧹 已收回廣播，各班前端的錯題訊息將被清除。");
+            await setDoc(bRef, { activeMessages: [] });
+            showMessageModal("🧹 已收回廣播，各班前端的錯題佇列與畫面將被完全清除。");
         } catch(e) { console.error(e); showMessageModal("清除失敗", true); }
     };
 
-    // --- 監控面板 (行政端) ---
+    // --- 監控面板 (行政端 區分燈號) ---
     let monitorUnsubscribe = null;
+    let onlineStatusMap = {};
+
     window.dbActions.setupMonitor = function() {
         if (window.renderMonitorGrid) window.renderMonitorGrid(); 
         
         const bRef = doc(db, 'artifacts', appId, 'public', 'data', 'broadcast_messages', 'current');
-        getDoc(bRef).then(snap => {
-            if(snap.exists() && snap.data().active) currentBroadcastId = snap.data().id;
+        onSnapshot(bRef, (snap) => {
+            if(snap.exists() && snap.data().activeMessages) {
+                currentGlobalMsgs = snap.data().activeMessages;
+            } else {
+                currentGlobalMsgs = [];
+            }
+            updateMonitorLights();
         });
 
         const onlineCol = collection(db, 'artifacts', appId, 'public', 'data', 'online_status');
         if(monitorUnsubscribe) monitorUnsubscribe();
         
         monitorUnsubscribe = onSnapshot(onlineCol, (snapshot) => {
-            const now = Date.now();
             snapshot.forEach(doc => {
-                const data = doc.data();
-                const clsName = data.className;
-                
-                const isOnline = (now - data.lastSeen) < (5 * 60 * 1000); 
-                const hasAck = (data.lastReceivedMsgId === currentBroadcastId && currentBroadcastId !== "");
-                
-                const box = document.getElementById(`monitor-box-${clsName}`);
-                if(box) {
-                    const dotOnline = document.getElementById(`dot-online-${clsName}`);
-                    const dotAck = document.getElementById(`dot-ack-${clsName}`);
-                    
-                    dotOnline.className = `status-dot ${isOnline ? 'dot-green' : 'dot-red'}`;
-                    dotOnline.nextSibling.nodeValue = isOnline ? " 上線" : " 離線";
-                    
-                    dotAck.className = `status-dot ${hasAck ? 'dot-green' : (isOnline ? 'dot-red' : 'dot-gray')}`;
-                    dotAck.nextSibling.nodeValue = hasAck ? " 已收" : " 未收";
-                }
+                onlineStatusMap[doc.data().className] = doc.data();
             });
+            updateMonitorLights();
         }, error => console.error(error));
     };
 
+    function updateMonitorLights() {
+        const now = Date.now();
+        if (window.globalClassList) {
+            window.globalClassList.forEach(cls => {
+                const cName = cls.id;
+                if (cName === "行政人員") return;
+                
+                const data = onlineStatusMap[cName];
+                const box = document.getElementById(`monitor-box-${cName}`);
+                if(box && data) {
+                    const isOnline = (now - data.lastSeen) < (5 * 60 * 1000); 
+                    const dotOnline = document.getElementById(`dot-online-${cName}`);
+                    if(dotOnline) {
+                        dotOnline.className = `status-dot ${isOnline ? 'dot-green' : 'dot-red'}`;
+                        dotOnline.nextSibling.nodeValue = isOnline ? " 上線" : " 離線";
+                    }
+                    
+                    // 多則訊息燈號處理
+                    const msgDotsContainer = document.getElementById(`msg-dots-${cName}`);
+                    if (msgDotsContainer) {
+                        if (currentGlobalMsgs.length === 0) {
+                            msgDotsContainer.innerHTML = '<span style="font-size:0.75rem; color:#aaa;">無廣播</span>';
+                        } else {
+                            let dotsHtml = "";
+                            currentGlobalMsgs.forEach((msg, idx) => {
+                                // 判斷該班級是否需要接收此訊息
+                                const needReceive = (msg.targetGrade === 'all' || msg.targetGrade === data.grade || (msg.targetGrade === '特殊' && data.grade === '特殊'));
+                                if (!needReceive) {
+                                    dotsHtml += `<span title="非目標" style="display:inline-block; margin-right:4px;"><span class="status-dot dot-gray"></span><small>M${idx+1}</small></span>`;
+                                } else {
+                                    // 檢查是否已收
+                                    const hasAck = data.ackMsgs && data.ackMsgs.includes(msg.id);
+                                    const dotClass = hasAck ? 'dot-green' : (isOnline ? 'dot-red' : 'dot-gray');
+                                    dotsHtml += `<span title="${hasAck ? '已收' : '未收'}" style="display:inline-block; margin-right:4px;"><span class="status-dot ${dotClass}"></span><small>M${idx+1}</small></span>`;
+                                }
+                            });
+                            msgDotsContainer.innerHTML = dotsHtml;
+                        }
+                    }
+                }
+            });
+        }
+    }
 </script>
 
 </body>
