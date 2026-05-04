@@ -412,7 +412,7 @@
                 <p id="qrLoading" style="color: var(--text-muted); font-weight: bold; padding: 15px;">正在產生登入條碼...</p>
             </div>
             <p style="font-size: 0.95rem; color: var(--danger); font-weight: bold;">使用鳳甲帳號登入</p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.9.0</p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 15px; font-weight: bold; letter-spacing: 1px;">V 1.9.2</p>
         </div>
 
         <!-- 模式二：手機端授權畫面 -->
@@ -1069,28 +1069,53 @@
         if (optgroup) classSel.appendChild(optgroup);
     };
 
-    // 加上 &_t=timestamp 快取破壞機制，強制抓取最新 GAS 資料
-    window.fetchFromGAS = async function(action, params = "") {
-        const timestamp = new Date().getTime();
-        const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}&_t=${timestamp}`;
-        try {
-            const res = await fetch(url, {
-                method: 'GET',
-                mode: 'cors'
-            });
-            const text = await res.text();
-            try {
-                const json = JSON.parse(text);
-                if(json.error) throw new Error(json.error);
-                return json.data;
-            } catch (err) {
-                console.warn(`[GAS 資料解析錯誤] 動作 "${action}" 回傳的格式不正確。`);
-                return null;
+    // 【終極修正 V1.9.2】改用 JSONP 跨域技術，徹底消滅 CORS Failed to fetch 錯誤
+    window.fetchFromGAS = function(action, params = "") {
+        return new Promise((resolve) => {
+            const timestamp = new Date().getTime();
+            // 建立唯一的回呼函式名稱
+            const callbackName = 'gasCallback_' + timestamp + '_' + Math.floor(Math.random() * 1000);
+            
+            const url = `${GAS_WEBAPP_URL}?action=${action}&token=${GAS_TOKEN}${params}&_t=${timestamp}&callback=${callbackName}`;
+            
+            // 安全機制：若 GAS 10秒內沒回應，自動判定失敗並繼續使用 Firebase
+            const timeoutId = setTimeout(() => {
+                cleanup();
+                console.warn(`[GAS 連線超時] 動作 "${action}" 遭阻擋或無回應。請確認 GAS 已重新部署且權限設為「所有人 Anyone」。系統將自動使用預設/備用資料。`);
+                resolve(null);
+            }, 10000);
+
+            function cleanup() {
+                delete window[callbackName];
+                const scriptEl = document.getElementById(callbackName);
+                if (scriptEl) document.body.removeChild(scriptEl);
             }
-        } catch(e) {
-            console.warn(`[GAS 連線提示] 動作 "${action}" 無法取得資料。這通常是因為 GAS 部署權限未設定為「所有人 (Anyone)」，或是網路連線被阻擋。系統將自動使用備用資料。`);
-            return null;
-        }
+
+            // 設定成功接收的回呼函式
+            window[callbackName] = function(response) {
+                clearTimeout(timeoutId);
+                cleanup();
+                
+                if(response.error) {
+                    console.warn(`[GAS 錯誤] ${response.error}`);
+                    resolve(null);
+                } else {
+                    resolve(response.data);
+                }
+            };
+
+            // 建立 script 標籤進行跨域請求，不受瀏覽器 CORS 限制
+            const script = document.createElement('script');
+            script.id = callbackName;
+            script.src = url;
+            script.onerror = function() {
+                clearTimeout(timeoutId);
+                cleanup();
+                console.warn(`[GAS 連線失敗] 動作 "${action}" 遭阻擋。請確認 GAS 已重新部署且權限設為「所有人 Anyone」。`);
+                resolve(null);
+            };
+            document.body.appendChild(script);
+        });
     };
 
     var defaultScheduleTemplates = {
@@ -2763,7 +2788,7 @@
         console.log("[MobileDebug] " + msg);
     }
 
-    mobileLog("蝔銝 (V 1.9.0)...");
+    mobileLog("程式啟動中 (V 1.9.2)...");
     mobileLog("UserAgent: " + navigator.userAgent.substring(0, 50) + "...");
 
     // --- 手機授權模式偵測 ---
